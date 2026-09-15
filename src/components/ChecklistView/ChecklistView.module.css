@@ -154,6 +154,32 @@
   background: var(--accent-soft);
 }
 
+.resourcesPanel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.3rem;
+}
+.resourcesHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+}
+.resourcesTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.resourcesHint {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
 .list {
   list-style: none;
   margin: 0;

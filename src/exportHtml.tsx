@@ -31,24 +31,28 @@ function renderDetails(details: string): string {
   return `<div class="export-prose">${inner}</div>`;
 }
 
+function renderResources(resources: Checklist["tasks"][number]["resources"]): string {
+  if (resources.length === 0) return "";
+  const items = resources
+    .map((r) => {
+      if (r.kind === "web") {
+        return `<li><a href="${escapeHtml(r.target)}" target="_blank" rel="noopener noreferrer">${escapeHtml(r.label)}</a></li>`;
+      }
+      if (r.data) {
+        // Bundled attachment — downloadable straight from this file.
+        return `<li><a href="${r.data}" download="${escapeHtml(r.label)}">${escapeHtml(r.label)}</a> <span class="file-note">(attached file)</span></li>`;
+      }
+      // Local file that was NOT bundled into this export.
+      return `<li><span class="file-removed">📎 ${escapeHtml(r.label)}</span> <span class="file-note">— file not included in this export</span></li>`;
+    })
+    .join("");
+  return `<ul class="resources">${items}</ul>`;
+}
+
 function renderTasks(checklist: Checklist): string {
   return checklist.tasks
     .map((task) => {
-      const resources = task.resources
-        .map((r) => {
-          if (r.kind === "web") {
-            return `<li><a href="${escapeHtml(r.target)}" target="_blank" rel="noopener noreferrer">${escapeHtml(r.label)}</a></li>`;
-          }
-          if (r.data) {
-            // Bundled attachment — downloadable straight from this file.
-            return `<li><a href="${r.data}" download="${escapeHtml(r.label)}">${escapeHtml(r.label)}</a> <span class="file-note">(attached file)</span></li>`;
-          }
-          return `<li><span class="file-res">${escapeHtml(r.label)}</span> <span class="file-note">(local file — opens in the desktop app only)</span></li>`;
-        })
-        .join("");
-      const resourcesBlock = resources
-        ? `<ul class="resources">${resources}</ul>`
-        : "";
+      const resourcesBlock = renderResources(task.resources);
       return `
       <li class="task" data-id="${escapeHtml(task.id)}">
         <label class="task-head">
@@ -89,6 +93,9 @@ export function renderChecklistHtml(checklist: Checklist): string {
   header { margin-bottom: 1.5rem; }
   h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
   .sub { color: #6b7280; font-size: .9rem; }
+  .overview { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: .8rem 1.1rem; margin-bottom: 1.2rem; }
+  .overview-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; margin-bottom: .3rem; }
+  .overview ul.resources { margin: 0; }
   ol.tasks { list-style: none; margin: 0; padding: 0; }
   .task { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: .75rem; }
   .task-head { display: flex; align-items: flex-start; gap: .7rem; cursor: pointer; font-weight: 600; }
@@ -98,6 +105,7 @@ export function renderChecklistHtml(checklist: Checklist): string {
   ul.resources li { margin: .2rem 0; }
   a { color: #2563eb; }
   .file-res { font-weight: 500; }
+  .file-removed { color: #9ca3af; text-decoration: line-through; }
   .file-note { color: #9ca3af; font-size: .82rem; }
   .reset { margin-top: 1.5rem; background: none; border: 1px solid #d1d5db; border-radius: 8px; padding: .4rem .8rem; color: #6b7280; cursor: pointer; font: inherit; font-size: .85rem; }
   /* Markdown prose */
@@ -122,7 +130,8 @@ export function renderChecklistHtml(checklist: Checklist): string {
   .export-prose th, .export-prose td { border: 1px solid #e5e7eb; padding: .35rem .6rem; }
   @media (prefers-color-scheme: dark) {
     body { background: #16181c; color: #e7e9ea; }
-    .task { background: #1f2226; border-color: #33373d; }
+    .task, .overview { background: #1f2226; border-color: #33373d; }
+    .overview-label { color: #8b929c; }
     .sub, .file-note { color: #8b929c; }
     .export-prose { color: #c3c7cd; }
     .export-prose h1, .export-prose h2, .export-prose h3 { color: #e7e9ea; }
@@ -137,6 +146,7 @@ export function renderChecklistHtml(checklist: Checklist): string {
       <h1>${escapeHtml(checklist.name)}</h1>
       <div class="sub">${checklist.tasks.length} step${checklist.tasks.length === 1 ? "" : "s"} · progress is saved in this browser</div>
     </header>
+    ${checklist.resources.length > 0 ? `<div class="overview"><div class="overview-label">Overview links &amp; files</div>${renderResources(checklist.resources)}</div>` : ""}
     <ol class="tasks">${renderTasks(checklist)}
     </ol>
     <button class="reset" type="button">Reset all checkboxes</button>

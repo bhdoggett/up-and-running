@@ -3,6 +3,7 @@ import type { Checklist, Task } from "../../types";
 import { newId } from "../../types";
 import { exportChecklistToHtml, exportChecklistToUar } from "../../exportHtml";
 import TaskItem from "../TaskItem/TaskItem";
+import ResourceList from "../ResourceList/ResourceList";
 import styles from "./ChecklistView.module.css";
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 export default function ChecklistView({ checklist, onChange }: Props) {
   const [newTitle, setNewTitle] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
 
@@ -60,6 +62,7 @@ export default function ChecklistView({ checklist, onChange }: Props) {
       resources: [],
     };
     onChange({ ...checklist, tasks: [...checklist.tasks, task] });
+    setJustAddedId(task.id);
     setNewTitle("");
   }
 
@@ -155,6 +158,19 @@ export default function ChecklistView({ checklist, onChange }: Props) {
           </div>
         </div>
 
+        <section className={styles.resourcesPanel}>
+          <div className={styles.resourcesHead}>
+            <span className={styles.resourcesTitle}>Overview links &amp; files</span>
+            <span className={styles.resourcesHint}>
+              For the whole checklist — e.g. a video covering the full setup
+            </span>
+          </div>
+          <ResourceList
+            resources={checklist.resources}
+            onChange={(resources) => onChange({ ...checklist, resources })}
+          />
+        </section>
+
         {total === 0 ? (
           <div className={styles.emptyState}>
             <h2>No steps yet</h2>
@@ -166,6 +182,7 @@ export default function ChecklistView({ checklist, onChange }: Props) {
               <TaskItem
                 key={task.id}
                 task={task}
+                autoEdit={task.id === justAddedId}
                 onToggleDone={() => toggleDone(task.id)}
                 onUpdate={updateTask}
                 onDelete={() => deleteTask(task.id)}

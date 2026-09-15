@@ -11,6 +11,14 @@ export function seedState(): AppState {
       {
         id: checklistId,
         name: "Sunday Service Setup",
+        resources: [
+          {
+            id: newId(),
+            label: "Full setup walkthrough (video)",
+            kind: "web",
+            target: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          },
+        ],
         tasks: [
           {
             id: newId(),

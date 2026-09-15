@@ -13,6 +13,8 @@ interface Props {
   onToggleDone: () => void;
   onUpdate: (task: Task) => void;
   onDelete: () => void;
+  /** Start in edit mode (used for freshly-added steps). */
+  autoEdit?: boolean;
 }
 
 export default function TaskItem({
@@ -20,9 +22,10 @@ export default function TaskItem({
   onToggleDone,
   onUpdate,
   onDelete,
+  autoEdit = false,
 }: Props) {
-  const [expanded, setExpanded] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [expanded, setExpanded] = useState(autoEdit);
+  const [editing, setEditing] = useState(autoEdit);
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
 
@@ -60,14 +63,9 @@ export default function TaskItem({
 
   async function addFileLink() {
     const selected = await openDialog({
-      title: "Choose a tutorial video or file",
+      title: "Choose a tutorial video, document, or any file",
       multiple: false,
-      filters: [
-        {
-          name: "Media & documents",
-          extensions: ["mp4", "mov", "m4v", "avi", "mkv", "webm", "pdf", "png", "jpg", "jpeg"],
-        },
-      ],
+      // No filter — attachments can be any file type (videos, PDFs, Office docs, etc.).
     });
     if (typeof selected !== "string") return; // cancelled
     const fallbackName = selected.split(/[\\/]/).pop() || selected;
@@ -203,6 +201,7 @@ export default function TaskItem({
             <input
               className={styles.input}
               value={task.title}
+              autoFocus={autoEdit}
               onChange={(e) => patch({ title: e.target.value })}
               placeholder="What needs to be done?"
             />

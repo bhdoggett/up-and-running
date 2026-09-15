@@ -20,7 +20,15 @@ export async function loadState(): Promise<AppState> {
   const store = await getStore();
   const saved = await store.get<AppState>(STATE_KEY);
   if (saved && Array.isArray(saved.checklists)) {
-    return saved;
+    // Backfill fields added in later versions so older saved data stays valid.
+    return {
+      ...saved,
+      checklists: saved.checklists.map((c) => ({
+        ...c,
+        resources: Array.isArray(c.resources) ? c.resources : [],
+        tasks: Array.isArray(c.tasks) ? c.tasks : [],
+      })),
+    };
   }
   // First run: seed with an example and persist it.
   const initial = seedState();

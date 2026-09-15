@@ -44,6 +44,7 @@ export default function App() {
     const checklist: Checklist = {
       id: newId(),
       name: "New checklist",
+      resources: [],
       tasks: [],
     };
     setState((s) =>

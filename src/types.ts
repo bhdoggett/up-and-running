@@ -29,6 +29,8 @@ export interface Task {
 export interface Checklist {
   id: string;
   name: string;
+  /** Links/files that apply to the whole checklist (e.g. an overview video). */
+  resources: Resource[];
   tasks: Task[];
 }
 

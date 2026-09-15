@@ -34,15 +34,14 @@ function mimeFromExt(path: string): string {
   }
 }
 
-// Local file attachments (the "+ Local file" resources) that could be bundled.
+// Local file attachments (the "+ Local file" resources) that could be bundled,
+// from both the checklist-level section and every task.
 export function localAttachments(checklist: Checklist): Resource[] {
-  const out: Resource[] = [];
-  for (const task of checklist.tasks) {
-    for (const r of task.resources) {
-      if (r.kind === "file" && isLocalPath(r.target)) out.push(r);
-    }
-  }
-  return out;
+  const all = [
+    ...checklist.resources,
+    ...checklist.tasks.flatMap((t) => t.resources),
+  ];
+  return all.filter((r) => r.kind === "file" && isLocalPath(r.target));
 }
 
 export async function totalAttachmentBytes(checklist: Checklist): Promise<number> {
@@ -124,21 +123,26 @@ export async function embedLocalImages(checklist: Checklist): Promise<Checklist>
   };
 }
 
+async function embedResourceList(resources: Resource[]): Promise<Resource[]> {
+  return Promise.all(
+    resources.map(async (r) => {
+      if (r.kind !== "file" || !isLocalPath(r.target) || r.data) return r;
+      const uri = await toDataUri(r.target);
+      return uri ? { ...r, data: uri } : r;
+    }),
+  );
+}
+
 // Attach a base64 data: URI to each local file resource so it travels with the
 // export. The original path is kept (as a filename hint); `data` carries bytes.
 async function embedAttachments(checklist: Checklist): Promise<Checklist> {
   return {
     ...checklist,
+    resources: await embedResourceList(checklist.resources),
     tasks: await Promise.all(
       checklist.tasks.map(async (task) => ({
         ...task,
-        resources: await Promise.all(
-          task.resources.map(async (r) => {
-            if (r.kind !== "file" || !isLocalPath(r.target) || r.data) return r;
-            const uri = await toDataUri(r.target);
-            return uri ? { ...r, data: uri } : r;
-          }),
-        ),
+        resources: await embedResourceList(task.resources),
       })),
     ),
   };
