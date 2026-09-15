@@ -125,6 +125,10 @@ export default function ChecklistView({ checklist, onChange }: Props) {
                 </span>
               )}
             </div>
+            <ResourceList
+              resources={checklist.resources}
+              onChange={(resources) => onChange({ ...checklist, resources })}
+            />
           </div>
           <div className={styles.exportWrap}>
             <button
@@ -157,19 +161,6 @@ export default function ChecklistView({ checklist, onChange }: Props) {
             )}
           </div>
         </div>
-
-        <section className={styles.resourcesPanel}>
-          <div className={styles.resourcesHead}>
-            <span className={styles.resourcesTitle}>Overview links &amp; files</span>
-            <span className={styles.resourcesHint}>
-              For the whole checklist — e.g. a video covering the full setup
-            </span>
-          </div>
-          <ResourceList
-            resources={checklist.resources}
-            onChange={(resources) => onChange({ ...checklist, resources })}
-          />
-        </section>
 
         {total === 0 ? (
           <div className={styles.emptyState}>

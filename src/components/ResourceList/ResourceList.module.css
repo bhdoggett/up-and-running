@@ -1,24 +1,29 @@
 .wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
 }
+/* One resource per line. */
 .list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 .chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.3rem;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  padding: 0.15rem 0.2rem 0.15rem 0.1rem;
+}
+.chip:hover {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.3rem 0.35rem 0.3rem 0.7rem;
 }
 .chipLink {
   display: inline-flex;
@@ -44,6 +49,10 @@
   line-height: 0;
   padding: 0.2rem;
   border-radius: 50%;
+  opacity: 0;
+}
+.chip:hover .remove {
+  opacity: 1;
 }
 .remove:hover {
   color: var(--danger);
