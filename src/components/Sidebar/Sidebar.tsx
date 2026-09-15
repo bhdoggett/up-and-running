@@ -11,6 +11,7 @@ interface Props {
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onImport: () => void;
+  onAiImport: () => void;
   /** Current width in px (set by the draggable divider in App). */
   width: number;
 }
@@ -29,10 +30,12 @@ export default function Sidebar({
   onRename,
   onDelete,
   onImport,
+  onAiImport,
   width,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
 
   function startRename(c: Checklist) {
     setEditingId(c.id);
@@ -67,11 +70,45 @@ export default function Sidebar({
       <div className={styles.listHead}>
         <span className={styles.listLabel}>Checklists</span>
         <div className={styles.headBtns}>
-          <button className={styles.addBtn} onClick={onImport} title="Import a checklist (.uar or .html)" aria-label="Import checklist">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2v7M5 6.5L8 9.5l3-3M3 12v1.5h10V12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          <div className={styles.importWrap}>
+            <button
+              className={styles.addBtn}
+              onClick={() => setImportOpen((v) => !v)}
+              title="Import a checklist"
+              aria-label="Import checklist"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v7M5 6.5L8 9.5l3-3M3 12v1.5h10V12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {importOpen && (
+              <>
+                <div className={styles.menuBackdrop} onClick={() => setImportOpen(false)} />
+                <div className={styles.menu}>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setImportOpen(false);
+                      onImport();
+                    }}
+                  >
+                    <strong>From a checklist file</strong>
+                    <span>.uar or exported .html</span>
+                  </button>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setImportOpen(false);
+                      onAiImport();
+                    }}
+                  >
+                    <strong>From a document (AI)</strong>
+                    <span>Word doc, PDF, or notes</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <button className={styles.addBtn} onClick={onAdd} title="New checklist" aria-label="New checklist">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />

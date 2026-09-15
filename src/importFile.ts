@@ -55,20 +55,10 @@ async function restoreResource(r: Resource, dir: string | null): Promise<Resourc
   return base;
 }
 
-// Let the user pick a .uar or .html file and turn it into a new, ready-to-use
-// checklist (fresh ids, progress reset, bundled attachments restored to disk).
-// Returns null if the user cancels.
-export async function importChecklistFromFile(): Promise<Checklist | null> {
-  const selected = await open({
-    title: "Import a checklist",
-    multiple: false,
-    filters: [{ name: "Checklist (.uar or .html)", extensions: ["uar", "html", "htm"] }],
-  });
-  if (typeof selected !== "string") return null;
-
-  const text = await readTextFile(selected);
-  const isHtml = /\.html?$/i.test(selected);
-  const raw = isHtml ? extractPayloadFromHtml(text) : JSON.parse(text);
+// Turn validated raw data into a new, ready-to-use checklist: fresh ids,
+// progress reset, bundled attachments written back to disk. Shared by every
+// import path (file, pasted JSON, AI-assisted).
+export async function buildImportedChecklist(raw: unknown): Promise<Checklist> {
   const checklist = asChecklist(raw);
   const resourceLists = [
     checklist.resources ?? [],
@@ -103,4 +93,47 @@ export async function importChecklistFromFile(): Promise<Checklist | null> {
       })),
     ),
   };
+}
+
+// Let the user pick a .uar or .html file. Returns null if they cancel.
+export async function importChecklistFromFile(): Promise<Checklist | null> {
+  const selected = await open({
+    title: "Import a checklist",
+    multiple: false,
+    filters: [{ name: "Checklist (.uar or .html)", extensions: ["uar", "html", "htm"] }],
+  });
+  if (typeof selected !== "string") return null;
+
+  const text = await readTextFile(selected);
+  const isHtml = /\.html?$/i.test(selected);
+  const raw = isHtml ? extractPayloadFromHtml(text) : JSON.parse(text);
+  return buildImportedChecklist(raw);
+}
+
+// Import from JSON text pasted into the app (e.g. an LLM's conversion output).
+// Tolerates a ```json fence and surrounding prose by extracting the outer object.
+export async function importChecklistFromJson(text: string): Promise<Checklist> {
+  const trimmed = text.trim();
+  if (!trimmed) throw new Error("Nothing pasted yet.");
+
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  let body = (fenced ? fenced[1] : trimmed).trim();
+  if (!body.startsWith("{")) {
+    const start = body.indexOf("{");
+    const end = body.lastIndexOf("}");
+    if (start === -1 || end <= start) {
+      throw new Error("Couldn't find any JSON in what you pasted.");
+    }
+    body = body.slice(start, end + 1);
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(body);
+  } catch (e) {
+    throw new Error(
+      `That isn't valid JSON: ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
+  return buildImportedChecklist(raw);
 }

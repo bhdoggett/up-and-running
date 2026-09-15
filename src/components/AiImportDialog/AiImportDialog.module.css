@@ -1,0 +1,140 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  z-index: 50;
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  width: min(620px, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.head {
+  padding: 1rem 1.2rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.body {
+  padding: 1rem 1.2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.step {
+  display: flex;
+  gap: 0.7rem;
+}
+.num {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.stepBody {
+  flex: 1;
+  min-width: 0;
+}
+.stepTitle {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.stepText {
+  margin: 0.15rem 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.btnRow {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+.btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.75rem;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.ok {
+  color: var(--done);
+  font-size: 0.82rem;
+  align-self: center;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 8rem;
+  resize: vertical;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.7rem;
+  background: var(--surface);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+}
+.textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.error {
+  color: var(--danger);
+  font-size: 0.83rem;
+  margin: 0;
+}
+
+.foot {
+  padding: 0.8rem 1.2rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.primary {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 1rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.primary:hover {
+  background: var(--accent-hover);
+}
+.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

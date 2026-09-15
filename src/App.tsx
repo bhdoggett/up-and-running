@@ -5,6 +5,7 @@ import { loadState, saveState } from "./storage";
 import { importChecklistFromFile } from "./importFile";
 import { message } from "@tauri-apps/plugin-dialog";
 import Sidebar from "./components/Sidebar/Sidebar";
+import AiImportDialog from "./components/AiImportDialog/AiImportDialog";
 import ChecklistView from "./components/ChecklistView/ChecklistView";
 import styles from "./App.module.css";
 
@@ -24,6 +25,7 @@ export default function App() {
     return saved ? clampWidth(saved) : 260;
   });
   const dragging = useRef(false);
+  const [aiImportOpen, setAiImportOpen] = useState(false);
 
   // Drag the divider to resize the sidebar; the width persists across launches.
   useEffect(() => {
@@ -127,19 +129,23 @@ export default function App() {
     });
   }
 
+  function addImported(imported: Checklist) {
+    setState((s) =>
+      s
+        ? {
+            ...s,
+            checklists: [...s.checklists, imported],
+            activeChecklistId: imported.id,
+          }
+        : s,
+    );
+  }
+
   async function importChecklist() {
     try {
       const imported = await importChecklistFromFile();
       if (!imported) return;
-      setState((s) =>
-        s
-          ? {
-              ...s,
-              checklists: [...s.checklists, imported],
-              activeChecklistId: imported.id,
-            }
-          : s,
-      );
+      addImported(imported);
     } catch (e) {
       console.error("Import failed", e);
       await message(String(e instanceof Error ? e.message : e), {
@@ -172,6 +178,7 @@ export default function App() {
         onRename={renameChecklist}
         onDelete={deleteChecklist}
         onImport={importChecklist}
+        onAiImport={() => setAiImportOpen(true)}
         width={sidebarWidth}
       />
       <div
@@ -194,6 +201,16 @@ export default function App() {
             <p>Pick one on the left, or create a new checklist to get started.</p>
           </div>
         </div>
+      )}
+
+      {aiImportOpen && (
+        <AiImportDialog
+          onClose={() => setAiImportOpen(false)}
+          onImported={(checklist) => {
+            addImported(checklist);
+            setAiImportOpen(false);
+          }}
+        />
       )}
     </div>
   );

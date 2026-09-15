@@ -46,6 +46,50 @@
   display: flex;
   gap: 0.3rem;
 }
+
+.importWrap {
+  position: relative;
+}
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+.menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 11;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 0.3rem;
+  width: 210px;
+}
+.menuItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.6rem;
+  color: var(--text);
+}
+.menuItem strong {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.menuItem span {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+.menuItem:hover {
+  background: var(--accent-soft);
+}
 .addBtn {
   background: none;
   border: 1px solid var(--border-strong);
