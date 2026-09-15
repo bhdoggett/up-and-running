@@ -21,12 +21,16 @@ export async function loadState(): Promise<AppState> {
   const store = await getStore();
   const saved = await store.get<AppState>(STATE_KEY);
   if (saved && Array.isArray(saved.checklists)) {
-    // Migrate data saved before sections existed, and backfill any missing
+    // Migrate data saved before sections/docs existed, and backfill any missing
     // fields, so older state stays valid.
-    return {
-      ...saved,
-      checklists: saved.checklists.map(withSections),
-    };
+    const checklists = saved.checklists.map(withSections);
+    const docs = Array.isArray(saved.docs) ? saved.docs : [];
+    const active =
+      saved.active ??
+      (saved.activeChecklistId
+        ? { kind: "checklist" as const, id: saved.activeChecklistId }
+        : null);
+    return { checklists, docs, active };
   }
   // First run: seed with an example and persist it.
   const initial = seedState();

@@ -1,7 +1,7 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeFile, mkdir } from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
-import type { Checklist, Resource, Task } from "./types";
+import type { Checklist, Doc, Resource, Task } from "./types";
 import { newId, withSections } from "./types";
 
 function bytesFromDataUri(uri: string): Uint8Array {
@@ -104,19 +104,55 @@ export async function buildImportedChecklist(raw: unknown): Promise<Checklist> {
   };
 }
 
-// Let the user pick a .uar or .html file. Returns null if they cancel.
-export async function importChecklistFromFile(): Promise<Checklist | null> {
+function isDocPayload(raw: unknown): boolean {
+  const r = raw as { itemKind?: string; body?: unknown };
+  return !!r && (r.itemKind === "doc" || typeof r.body === "string");
+}
+
+function buildImportedDoc(raw: unknown): Doc {
+  const d = raw as Doc;
+  if (typeof d.name !== "string") {
+    throw new Error("That file doesn't contain a valid doc.");
+  }
+  return {
+    id: newId(),
+    name: d.name,
+    body: typeof d.body === "string" ? d.body : "",
+    resources: Array.isArray(d.resources)
+      ? d.resources.map((r) => ({
+          id: newId(),
+          label: r.label,
+          kind: r.kind,
+          target: r.target,
+        }))
+      : [],
+  };
+}
+
+export type ImportedItem =
+  | { kind: "checklist"; checklist: Checklist }
+  | { kind: "doc"; doc: Doc };
+
+// Let the user pick a .uar or .html file holding either a checklist or a doc.
+// Returns null if they cancel.
+export async function importChecklistFromFile(): Promise<ImportedItem | null> {
   const selected = await open({
-    title: "Import a checklist",
+    title: "Import a checklist or doc",
     multiple: false,
-    filters: [{ name: "Checklist (.uar or .html)", extensions: ["uar", "html", "htm"] }],
+    filters: [
+      { name: "Checklist or doc (.uar or .html)", extensions: ["uar", "html", "htm"] },
+    ],
   });
   if (typeof selected !== "string") return null;
 
   const text = await readTextFile(selected);
   const isHtml = /\.html?$/i.test(selected);
   const raw = isHtml ? extractPayloadFromHtml(text) : JSON.parse(text);
-  return buildImportedChecklist(raw);
+
+  if (isDocPayload(raw)) {
+    return { kind: "doc", doc: buildImportedDoc(raw) };
+  }
+  return { kind: "checklist", checklist: await buildImportedChecklist(raw) };
 }
 
 // Import from JSON text pasted into the app (e.g. an LLM's conversion output).

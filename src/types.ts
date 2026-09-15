@@ -83,10 +83,32 @@ export function withSections(c: Checklist): Checklist {
   };
 }
 
+/**
+ * A reference page: how something works, a diagram, a policy — anything that
+ * explains rather than instructs step by step. Just a Markdown body plus links
+ * and files.
+ */
+export interface Doc {
+  id: string;
+  name: string;
+  body: string;
+  resources: Resource[];
+}
+
+export type ItemKind = "checklist" | "doc";
+
+/** What the main pane is showing. */
+export interface Selection {
+  kind: ItemKind;
+  id: string;
+}
+
 export interface AppState {
   checklists: Checklist[];
-  /** id of the checklist currently shown in the main pane. */
-  activeChecklistId: string | null;
+  docs: Doc[];
+  active: Selection | null;
+  /** Pre-docs format; migrated into `active` on load. */
+  activeChecklistId?: string | null;
 }
 
 export function newId(): string {

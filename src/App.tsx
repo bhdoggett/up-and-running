@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppState, Checklist } from "./types";
+import type { AppState, Checklist, Doc, ItemKind, Selection } from "./types";
 import { newId } from "./types";
 import { loadState, saveState } from "./storage";
 import { importChecklistFromFile } from "./importFile";
@@ -7,6 +7,7 @@ import { message } from "@tauri-apps/plugin-dialog";
 import Sidebar from "./components/Sidebar/Sidebar";
 import AiImportDialog from "./components/AiImportDialog/AiImportDialog";
 import ChecklistView from "./components/ChecklistView/ChecklistView";
+import DocView from "./components/DocView/DocView";
 import styles from "./App.module.css";
 
 const SIDEBAR_WIDTH_KEY = "up-and-running:sidebar-width";
@@ -79,11 +80,17 @@ export default function App() {
     return <div className={styles.loading}>Loading…</div>;
   }
 
-  const active =
-    state.checklists.find((c) => c.id === state.activeChecklistId) ?? null;
+  const activeChecklist =
+    state.active?.kind === "checklist"
+      ? (state.checklists.find((c) => c.id === state.active!.id) ?? null)
+      : null;
+  const activeDoc =
+    state.active?.kind === "doc"
+      ? (state.docs.find((d) => d.id === state.active!.id) ?? null)
+      : null;
 
-  function selectChecklist(id: string) {
-    setState((s) => (s ? { ...s, activeChecklistId: id } : s));
+  function select(sel: Selection) {
+    setState((s) => (s ? { ...s, active: sel } : s));
   }
 
   function addChecklist() {
@@ -91,41 +98,60 @@ export default function App() {
       id: newId(),
       name: "New checklist",
       resources: [],
-      tasks: [],
+      sections: [{ id: newId(), name: "", collapsed: false, tasks: [] }],
     };
     setState((s) =>
       s
         ? {
             ...s,
             checklists: [...s.checklists, checklist],
-            activeChecklistId: checklist.id,
+            active: { kind: "checklist", id: checklist.id },
           }
         : s,
     );
   }
 
-  function renameChecklist(id: string, name: string) {
+  function addDoc() {
+    const doc: Doc = { id: newId(), name: "New doc", body: "", resources: [] };
     setState((s) =>
       s
-        ? {
-            ...s,
-            checklists: s.checklists.map((c) =>
-              c.id === id ? { ...c, name } : c,
-            ),
-          }
+        ? { ...s, docs: [...s.docs, doc], active: { kind: "doc", id: doc.id } }
         : s,
     );
   }
 
-  function deleteChecklist(id: string) {
+  function rename(kind: ItemKind, id: string, name: string) {
     setState((s) => {
       if (!s) return s;
-      const remaining = s.checklists.filter((c) => c.id !== id);
-      const activeChecklistId =
-        s.activeChecklistId === id
-          ? (remaining[0]?.id ?? null)
-          : s.activeChecklistId;
-      return { ...s, checklists: remaining, activeChecklistId };
+      if (kind === "checklist") {
+        return {
+          ...s,
+          checklists: s.checklists.map((c) => (c.id === id ? { ...c, name } : c)),
+        };
+      }
+      return { ...s, docs: s.docs.map((d) => (d.id === id ? { ...d, name } : d)) };
+    });
+  }
+
+  // After deleting, fall back to another item of the same kind, then anything.
+  function remove(kind: ItemKind, id: string) {
+    setState((s) => {
+      if (!s) return s;
+      const checklists =
+        kind === "checklist" ? s.checklists.filter((c) => c.id !== id) : s.checklists;
+      const docs = kind === "doc" ? s.docs.filter((d) => d.id !== id) : s.docs;
+      let active = s.active;
+      if (active?.kind === kind && active.id === id) {
+        const sameKind = kind === "checklist" ? checklists[0]?.id : docs[0]?.id;
+        active = sameKind
+          ? { kind, id: sameKind }
+          : checklists[0]
+            ? { kind: "checklist", id: checklists[0].id }
+            : docs[0]
+              ? { kind: "doc", id: docs[0].id }
+              : null;
+      }
+      return { ...s, checklists, docs, active };
     });
   }
 
@@ -135,8 +161,16 @@ export default function App() {
         ? {
             ...s,
             checklists: [...s.checklists, imported],
-            activeChecklistId: imported.id,
+            active: { kind: "checklist", id: imported.id },
           }
+        : s,
+    );
+  }
+
+  function updateDoc(updated: Doc) {
+    setState((s) =>
+      s
+        ? { ...s, docs: s.docs.map((d) => (d.id === updated.id ? updated : d)) }
         : s,
     );
   }
@@ -145,7 +179,16 @@ export default function App() {
     try {
       const imported = await importChecklistFromFile();
       if (!imported) return;
-      addImported(imported);
+      if (imported.kind === "doc") {
+        const doc = imported.doc;
+        setState((s) =>
+          s
+            ? { ...s, docs: [...s.docs, doc], active: { kind: "doc", id: doc.id } }
+            : s,
+        );
+        return;
+      }
+      addImported(imported.checklist);
     } catch (e) {
       console.error("Import failed", e);
       await message(String(e instanceof Error ? e.message : e), {
@@ -172,11 +215,13 @@ export default function App() {
     <div className={styles.app}>
       <Sidebar
         checklists={state.checklists}
-        activeId={state.activeChecklistId}
-        onSelect={selectChecklist}
-        onAdd={addChecklist}
-        onRename={renameChecklist}
-        onDelete={deleteChecklist}
+        docs={state.docs}
+        active={state.active}
+        onSelect={select}
+        onAddChecklist={addChecklist}
+        onAddDoc={addDoc}
+        onRename={rename}
+        onDelete={remove}
         onImport={importChecklist}
         onAiImport={() => setAiImportOpen(true)}
         width={sidebarWidth}
@@ -192,13 +237,15 @@ export default function App() {
         aria-orientation="vertical"
         title="Drag to resize · double-click to reset"
       />
-      {active ? (
-        <ChecklistView checklist={active} onChange={updateChecklist} />
+      {activeChecklist ? (
+        <ChecklistView checklist={activeChecklist} onChange={updateChecklist} />
+      ) : activeDoc ? (
+        <DocView doc={activeDoc} onChange={updateDoc} />
       ) : (
         <div className={styles.blank}>
           <div>
-            <h2>No checklist selected</h2>
-            <p>Pick one on the left, or create a new checklist to get started.</p>
+            <h2>Nothing selected</h2>
+            <p>Pick a checklist or doc on the left, or create a new one.</p>
           </div>
         </div>
       )}

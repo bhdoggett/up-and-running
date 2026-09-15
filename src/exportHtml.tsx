@@ -1,13 +1,16 @@
 import { save, confirm } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { Checklist } from "./types";
+import type { Checklist, Doc, Resource } from "./types";
 import { allTasks } from "./types";
 import MarkdownView from "./components/MarkdownView/MarkdownView";
 import {
   preparePortable,
+  prepareDocPortable,
   localAttachments,
+  localDocAttachments,
   totalAttachmentBytes,
+  totalDocAttachmentBytes,
   formatBytes,
 } from "./exportShared";
 
@@ -32,7 +35,7 @@ function renderDetails(details: string): string {
   return `<div class="export-prose">${inner}</div>`;
 }
 
-function renderResources(resources: Checklist["tasks"][number]["resources"]): string {
+function renderResources(resources: Resource[]): string {
   if (resources.length === 0) return "";
   const items = resources
     .map((r) => {
@@ -241,14 +244,111 @@ export function renderChecklistHtml(checklist: Checklist): string {
 </html>`;
 }
 
+// A reference doc as a standalone page: same styling as the checklist export,
+// with the Markdown body rendered and the doc JSON embedded for re-import.
+export function renderDocHtml(doc: Doc): string {
+  const payload = JSON.stringify({ ...doc, itemKind: "doc" }).replace(/</g, "\\u003c");
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(doc.name)}</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1rem;
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #f6f7f9; color: #1c1f23;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  header { margin-bottom: 1.3rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  .sub { color: #6b7280; font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.1rem 1.3rem; }
+  .overview { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: .8rem 1.1rem; margin-bottom: 1.1rem; }
+  .overview-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; margin-bottom: .3rem; }
+  ul.resources { margin: 0; padding-left: 1rem; }
+  ul.resources li { margin: .2rem 0; }
+  a { color: #2563eb; }
+  .file-res { font-weight: 500; }
+  .file-removed { color: #9ca3af; text-decoration: line-through; }
+  .file-note { color: #9ca3af; font-size: .82rem; }
+  .export-prose { color: #374151; }
+  .export-prose > :first-child { margin-top: 0; }
+  .export-prose h1, .export-prose h2, .export-prose h3 { color: #1c1f23; line-height: 1.3; margin: 1.1rem 0 .4rem; }
+  .export-prose h1 { font-size: 1.2rem; } .export-prose h2 { font-size: 1.08rem; } .export-prose h3 { font-size: 1rem; }
+  .export-prose p { margin: .5rem 0; }
+  .export-prose ul, .export-prose ol { margin: .5rem 0; padding-left: 1.4rem; }
+  .export-prose li { margin: .2rem 0; }
+  .export-prose ul { list-style-type: disc; }
+  .export-prose ul ul { list-style-type: circle; }
+  .export-prose ul ul ul { list-style-type: square; }
+  .export-prose img { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: .6rem 0; }
+  .export-prose code { background: #eef0f3; border-radius: 4px; padding: .05rem .3rem; font-size: .88em; }
+  .export-prose pre { background: #eef0f3; border-radius: 8px; padding: .7rem .85rem; overflow-x: auto; }
+  .export-prose pre code { background: none; padding: 0; }
+  .export-prose blockquote { margin: .6rem 0; padding: .2rem 0 .2rem .9rem; border-left: 3px solid #d3d6dc; color: #6b7280; }
+  .export-prose table { border-collapse: collapse; margin: .6rem 0; }
+  .export-prose th, .export-prose td { border: 1px solid #e5e7eb; padding: .35rem .6rem; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #16181c; color: #e7e9ea; }
+    .card, .overview { background: #1f2226; border-color: #33373d; }
+    .sub, .overview-label, .file-note { color: #8b929c; }
+    .export-prose { color: #c3c7cd; }
+    .export-prose h1, .export-prose h2, .export-prose h3 { color: #e7e9ea; }
+    .export-prose code, .export-prose pre { background: #2a2e34; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="sub">Reference doc</div>
+      <h1>${escapeHtml(doc.name)}</h1>
+    </header>
+    ${doc.resources.length > 0 ? `<div class="overview"><div class="overview-label">Links &amp; files</div>${renderResources(doc.resources)}</div>` : ""}
+    <div class="card">${renderDetails(doc.body) || "<p><em>No content yet.</em></p>"}</div>
+  </div>
+  <script type="application/json" id="uar-data">${payload}</script>
+</body>
+</html>`;
+}
+
+/** Export a doc as a standalone page. Returns the path, or null if cancelled. */
+export async function exportDocToHtml(doc: Doc): Promise<string | null> {
+  const includeAttachments = await askIncludeDocAttachments(doc);
+  const path = await save({
+    title: "Export doc as HTML",
+    defaultPath: `${safeName(doc.name)}.html`,
+    filters: [{ name: "HTML", extensions: ["html"] }],
+  });
+  if (!path) return null;
+  const portable = await prepareDocPortable(doc, includeAttachments);
+  await writeTextFile(path, renderDocHtml(portable));
+  return path;
+}
+
 // If the checklist has local file attachments, ask whether to bundle them
 // (showing the total size). Returns the user's choice; no prompt when there are none.
+async function askIncludeDocAttachments(doc: Doc): Promise<boolean> {
+  const attachments = localDocAttachments(doc);
+  if (attachments.length === 0) return false;
+  const bytes = await totalDocAttachmentBytes(doc);
+  return askBundle(attachments.length, bytes);
+}
+
 async function askIncludeAttachments(checklist: Checklist): Promise<boolean> {
   const attachments = localAttachments(checklist);
   if (attachments.length === 0) return false;
   const bytes = await totalAttachmentBytes(checklist);
+  return askBundle(attachments.length, bytes);
+}
+
+function askBundle(count: number, bytes: number): Promise<boolean> {
   return confirm(
-    `This checklist has ${attachments.length} file attachment${attachments.length === 1 ? "" : "s"} totaling ${formatBytes(bytes)}.\n\n` +
+    `This has ${count} file attachment${count === 1 ? "" : "s"} totaling ${formatBytes(bytes)}.\n\n` +
       `Include them in the export? They'll travel with the file so it works on any computer, but the file will be larger. ` +
       `Choose “Skip” to keep the file small (attachments stay as references only).`,
     {

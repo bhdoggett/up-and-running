@@ -106,12 +106,17 @@
   border-color: var(--accent);
 }
 
+/* Scroll both groups together so each keeps its natural height. */
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 1rem;
+}
+
 .list {
   list-style: none;
   margin: 0;
   padding: 0.2rem 0.6rem;
-  overflow-y: auto;
-  flex: 1;
 }
 .row {
   display: flex;
@@ -178,8 +183,7 @@
 }
 
 .empty {
-  padding: 1rem;
+  padding: 0.35rem 0.6rem 0.6rem;
   color: var(--text-faint);
-  font-size: 0.85rem;
-  text-align: center;
+  font-size: 0.82rem;
 }

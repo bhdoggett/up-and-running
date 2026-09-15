@@ -1,5 +1,5 @@
 import { readFile, stat } from "@tauri-apps/plugin-fs";
-import type { Checklist, Resource } from "./types";
+import type { Checklist, Doc, Resource } from "./types";
 import { allTasks } from "./types";
 import { isLocalPath } from "./components/MarkdownView/MarkdownView";
 
@@ -154,6 +154,56 @@ async function embedAttachments(checklist: Checklist): Promise<Checklist> {
         ),
       })),
     ),
+  };
+}
+
+/** Local file attachments on a reference doc. */
+export function localDocAttachments(doc: Doc): Resource[] {
+  return doc.resources.filter((r) => r.kind === "file" && isLocalPath(r.target));
+}
+
+export async function totalDocAttachmentBytes(doc: Doc): Promise<number> {
+  const sizes = await Promise.all(
+    localDocAttachments(doc).map(async (r) => {
+      try {
+        return (await stat(r.target)).size;
+      } catch {
+        return 0;
+      }
+    }),
+  );
+  return sizes.reduce((a, b) => a + b, 0);
+}
+
+// Same treatment as a checklist: inline images in the body, optionally bundle
+// attachments, so the exported page works on any machine.
+export async function prepareDocPortable(
+  doc: Doc,
+  includeAttachments: boolean,
+): Promise<Doc> {
+  const paths = new Set<string>();
+  for (const m of doc.body.matchAll(MARKDOWN_IMAGE_RE)) {
+    if (isLocalPath(m[1])) paths.add(m[1]);
+  }
+  const map = new Map<string, string>();
+  await Promise.all(
+    [...paths].map(async (p) => {
+      const uri = await toDataUri(p);
+      if (uri) map.set(p, uri);
+    }),
+  );
+
+  const body = doc.body.replace(MARKDOWN_IMAGE_RE, (whole, src) => {
+    const uri = map.get(src);
+    return uri ? whole.replace(src, uri) : whole;
+  });
+
+  return {
+    ...doc,
+    body,
+    resources: includeAttachments
+      ? await embedResourceList(doc.resources)
+      : doc.resources,
   };
 }
 

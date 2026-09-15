@@ -6,7 +6,33 @@ import { newId } from "./types";
 export function seedState(): AppState {
   const checklistId = newId();
   return {
-    activeChecklistId: checklistId,
+    active: { kind: "checklist", id: checklistId },
+    docs: [
+      {
+        id: newId(),
+        name: "How the sound system is wired",
+        resources: [],
+        body: `The booth feeds two zones. Nothing here needs checking off — it's
+just here so you know what you're looking at.
+
+## Signal path
+
+- **Stage boxes** run to the snake under the platform
+- The snake terminates at the **booth patch panel**
+- From there into the **board**, then out to:
+  - Main speakers (left / right)
+  - Monitor sends
+  - The lobby feed
+
+## Common gotchas
+
+- Channel 7 is the wireless handheld — it lives on a **different battery** than
+  the lapel packs.
+- If the lobby goes quiet but the room is fine, check the **zone 2 knob** on the
+  amp rack before assuming a dead speaker.
+`,
+      },
+    ],
     checklists: [
       {
         id: checklistId,
