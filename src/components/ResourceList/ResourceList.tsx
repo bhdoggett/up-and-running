@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import type { Resource } from "../../types";
+import type { Resource, ResourceKind } from "../../types";
 import { newId } from "../../types";
-import { openLink } from "../../appLinks";
+import { openLink, normalizeTarget } from "../../appLinks";
 import styles from "./ResourceList.module.css";
 
 interface Props {
@@ -10,30 +10,126 @@ interface Props {
   onChange: (resources: Resource[]) => void;
 }
 
-// A compact editor for a list of links/files: open, remove, add web link, add file.
-export default function ResourceList({ resources, onChange }: Props) {
-  const [label, setLabel] = useState("");
-  const [url, setUrl] = useState("");
-  const [addingLink, setAddingLink] = useState(false);
+interface RowProps {
+  label: string;
+  kind: ResourceKind;
+  items: Resource[];
+  onAdd: () => void;
+  onUpdate: (id: string, changes: Partial<Resource>) => void;
+  onRemove: (id: string) => void;
+}
 
-  function addWebLink() {
-    const target = url.trim();
-    if (!target) return;
+// One labeled row ("Links:" or "Files:") that flips between viewing and editing.
+function Row({ label, kind, items, onAdd, onUpdate, onRemove }: RowProps) {
+  const [editing, setEditing] = useState(false);
+
+  // Adding always lands in edit mode so the new entry can be named right away.
+  function handleAdd() {
+    onAdd();
+    setEditing(true);
+  }
+
+  return (
+    <div className={styles.row}>
+      <span className={styles.rowLabel}>{label}</span>
+      <div className={styles.rowBody}>
+        {!editing && items.length > 0 && (
+          <ul className={styles.list}>
+            {items.map((r) => (
+              <li key={r.id} className={styles.chip}>
+                <button className={styles.chipLink} onClick={() => openLink(r.target)}>
+                  {r.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {editing && (
+          <ul className={styles.editList}>
+            {items.map((r) => (
+              <li key={r.id} className={styles.editRow}>
+                <input
+                  className={styles.input}
+                  value={r.label}
+                  onChange={(e) => onUpdate(r.id, { label: e.target.value })}
+                  placeholder="Label"
+                />
+                {kind === "web" ? (
+                  <input
+                    className={styles.input}
+                    value={r.target}
+                    onChange={(e) => onUpdate(r.id, { target: e.target.value })}
+                    onBlur={(e) =>
+                      onUpdate(r.id, { target: normalizeTarget(e.target.value) })
+                    }
+                    placeholder="https://…"
+                  />
+                ) : (
+                  <span className={styles.path} title={r.target}>
+                    {r.target}
+                  </span>
+                )}
+                <button
+                  className={styles.remove}
+                  onClick={() => onRemove(r.id)}
+                  title="Remove"
+                  aria-label="Remove"
+                >
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                    <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {editing ? (
+          <div className={styles.editActions}>
+            <button className={styles.smallBtn} onClick={handleAdd}>
+              {kind === "web" ? "+ Link" : "+ File"}
+            </button>
+            <button className={styles.smallBtn} onClick={() => setEditing(false)}>
+              Done
+            </button>
+          </div>
+        ) : items.length === 0 ? (
+          // Nothing here yet — invite adding instead of showing a bare pencil.
+          <button className={styles.addEmpty} onClick={handleAdd}>
+            {kind === "web" ? "+ Link" : "+ File"}
+          </button>
+        ) : (
+          <button
+            className={styles.pencil}
+            onClick={() => setEditing(true)}
+            title={`Edit ${label.replace(":", "").toLowerCase()}`}
+            aria-label={`Edit ${label.replace(":", "").toLowerCase()}`}
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <path d="M11.5 2.5l2 2L6 12l-2.5.5L4 10l7.5-7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Checklist-level links and files, split into a "Links:" row and a "Files:" row.
+export default function ResourceList({ resources, onChange }: Props) {
+  function update(id: string, changes: Partial<Resource>) {
+    onChange(resources.map((r) => (r.id === id ? { ...r, ...changes } : r)));
+  }
+  function remove(id: string) {
+    onChange(resources.filter((r) => r.id !== id));
+  }
+  function addLink() {
     onChange([
       ...resources,
-      { id: newId(), label: label.trim() || target, kind: "web", target },
+      { id: newId(), label: "New link", kind: "web", target: "https://" },
     ]);
-    setLabel("");
-    setUrl("");
-    setAddingLink(false);
   }
-
-  function cancelLink() {
-    setLabel("");
-    setUrl("");
-    setAddingLink(false);
-  }
-
   async function addFile() {
     const selected = await openDialog({
       title: "Choose a file for this checklist",
@@ -43,78 +139,28 @@ export default function ResourceList({ resources, onChange }: Props) {
     const fallback = selected.split(/[\\/]/).pop() || selected;
     onChange([
       ...resources,
-      { id: newId(), label: label.trim() || fallback, kind: "file", target: selected },
+      { id: newId(), label: fallback, kind: "file", target: selected },
     ]);
-    setLabel("");
-  }
-
-  function remove(id: string) {
-    onChange(resources.filter((r) => r.id !== id));
-  }
-
-  const links = resources.filter((r) => r.kind === "web");
-  const files = resources.filter((r) => r.kind === "file");
-
-  function renderItems(items: Resource[]) {
-    return items.map((r) => (
-      <li key={r.id} className={styles.chip}>
-        <button className={styles.chipLink} onClick={() => openLink(r.target)}>
-          {r.label}
-        </button>
-        <button className={styles.remove} onClick={() => remove(r.id)} title="Remove" aria-label="Remove">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </button>
-      </li>
-    ));
   }
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.row}>
-        <span className={styles.rowLabel}>Links:</span>
-        <div className={styles.rowBody}>
-          {links.length > 0 && <ul className={styles.list}>{renderItems(links)}</ul>}
-          {addingLink ? (
-            <div className={styles.addRow}>
-              <input
-                className={styles.input}
-                style={{ flex: "1 1 7rem" }}
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                placeholder="Label (optional)"
-              />
-              <input
-                className={styles.input}
-                style={{ flex: "2 1 11rem" }}
-                value={url}
-                autoFocus
-                onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addWebLink();
-                  if (e.key === "Escape") cancelLink();
-                }}
-                placeholder="https://…"
-              />
-              <button className={styles.smallBtn} onClick={addWebLink}>Add</button>
-              <button className={styles.smallBtn} onClick={cancelLink}>Cancel</button>
-            </div>
-          ) : (
-            <button className={styles.smallBtn} onClick={() => setAddingLink(true)}>
-              + Link
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className={styles.row}>
-        <span className={styles.rowLabel}>Files:</span>
-        <div className={styles.rowBody}>
-          {files.length > 0 && <ul className={styles.list}>{renderItems(files)}</ul>}
-          <button className={styles.smallBtn} onClick={addFile}>+ File</button>
-        </div>
-      </div>
+      <Row
+        label="Links:"
+        kind="web"
+        items={resources.filter((r) => r.kind === "web")}
+        onAdd={addLink}
+        onUpdate={update}
+        onRemove={remove}
+      />
+      <Row
+        label="Files:"
+        kind="file"
+        items={resources.filter((r) => r.kind === "file")}
+        onAdd={addFile}
+        onUpdate={update}
+        onRemove={remove}
+      />
     </div>
   );
 }
