@@ -1,5 +1,6 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { openPath, openUrl } from "@tauri-apps/plugin-opener";
+import { message } from "@tauri-apps/plugin-dialog";
 import { isLocalPath } from "./components/MarkdownView/MarkdownView";
 
 // In-app image resolution: local file paths go through Tauri's asset protocol
@@ -20,8 +21,16 @@ export function normalizeTarget(target: string): string {
 }
 
 // Open a link the way the OS would: files with the default app, URLs in the browser.
+// Failures surface as a dialog — a silent console error just looks like a dead link.
 export async function openLink(href: string): Promise<void> {
   const target = normalizeTarget(href);
+  if (!target || target === "https://") {
+    await message("This entry has no address yet. Use the pencil to set one.", {
+      title: "Nothing to open",
+      kind: "warning",
+    });
+    return;
+  }
   try {
     if (isLocalPath(target)) {
       await openPath(target);
@@ -30,5 +39,14 @@ export async function openLink(href: string): Promise<void> {
     }
   } catch (e) {
     console.error("Failed to open link", target, e);
+    await message(`Could not open:\n${target}\n\n${e instanceof Error ? e.message : String(e)}`, {
+      title: "Couldn't open link",
+      kind: "error",
+    });
   }
+}
+
+/** What to show for a resource: its label, or the target when unlabeled. */
+export function displayLabel(r: { label: string; target: string }): string {
+  return r.label.trim() || r.target;
 }

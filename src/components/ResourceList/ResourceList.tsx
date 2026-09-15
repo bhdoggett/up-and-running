@@ -2,7 +2,7 @@ import { useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import type { Resource, ResourceKind } from "../../types";
 import { newId } from "../../types";
-import { openLink, normalizeTarget } from "../../appLinks";
+import { openLink, normalizeTarget, displayLabel } from "../../appLinks";
 import styles from "./ResourceList.module.css";
 
 interface Props {
@@ -29,16 +29,35 @@ function Row({ label, kind, items, onAdd, onUpdate, onRemove }: RowProps) {
     setEditing(true);
   }
 
+  // Removing the last entry leaves nothing to edit, so close edit mode with it.
+  function handleRemove(id: string) {
+    onRemove(id);
+    if (items.length <= 1) setEditing(false);
+  }
+
   return (
     <div className={styles.row}>
       <span className={styles.rowLabel}>{label}</span>
-      <div className={styles.rowBody}>
+      <div
+        className={styles.rowBody}
+        onKeyDown={(e) => {
+          // Cmd/Ctrl+Enter finishes editing, same as clicking Done.
+          if (editing && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            setEditing(false);
+          }
+        }}
+      >
         {!editing && items.length > 0 && (
           <ul className={styles.list}>
             {items.map((r) => (
               <li key={r.id} className={styles.chip}>
-                <button className={styles.chipLink} onClick={() => openLink(r.target)}>
-                  {r.label}
+                <button
+                  className={styles.chipLink}
+                  onClick={() => openLink(r.target)}
+                  title={displayLabel(r)}
+                >
+                  {displayLabel(r)}
                 </button>
               </li>
             ))}
@@ -72,7 +91,7 @@ function Row({ label, kind, items, onAdd, onUpdate, onRemove }: RowProps) {
                 )}
                 <button
                   className={styles.remove}
-                  onClick={() => onRemove(r.id)}
+                  onClick={() => handleRemove(r.id)}
                   title="Remove"
                   aria-label="Remove"
                 >
@@ -127,7 +146,7 @@ export default function ResourceList({ resources, onChange }: Props) {
   function addLink() {
     onChange([
       ...resources,
-      { id: newId(), label: "New link", kind: "web", target: "https://" },
+      { id: newId(), label: "", kind: "web", target: "" },
     ]);
   }
   async function addFile() {

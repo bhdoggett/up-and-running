@@ -5,7 +5,7 @@ import type { Resource, Task } from "../../types";
 import { newId } from "../../types";
 import MarkdownView from "../MarkdownView/MarkdownView";
 import MarkdownEditor from "../MarkdownEditor/MarkdownEditor";
-import { resolveAppImage, openLink } from "../../appLinks";
+import { resolveAppImage, openLink, displayLabel } from "../../appLinks";
 import styles from "./TaskItem.module.css";
 
 interface Props {
@@ -181,7 +181,7 @@ export default function TaskItem({
                         <path d="M4.5 2.5h4l3 3v8h-7v-11zM8.5 2.5v3h3" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
                       )}
                     </svg>
-                    {r.label}
+                    {displayLabel(r)}
                     <span className={styles.resKind}>
                       {r.kind === "web" ? "↗" : "· file"}
                     </span>
