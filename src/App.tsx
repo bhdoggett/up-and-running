@@ -4,6 +4,8 @@ import { newId } from "./types";
 import { loadState, saveState } from "./storage";
 import { importChecklistFromFile, type ImportedItem } from "./importFile";
 import { openLink } from "./appLinks";
+import { LibraryProvider } from "./library";
+import { allFiles } from "./types";
 import { message, open as openDialog } from "@tauri-apps/plugin-dialog";
 import Sidebar from "./components/Sidebar/Sidebar";
 import AiImportDialog from "./components/AiImportDialog/AiImportDialog";
@@ -239,6 +241,9 @@ export default function App() {
   }
 
   return (
+    <LibraryProvider
+      value={{ checklists: state.checklists, docs: state.docs, navigate: select }}
+    >
     <div className={styles.app}>
       <Sidebar
         checklists={state.checklists}
@@ -247,7 +252,7 @@ export default function App() {
         onSelect={select}
         onAddChecklist={addChecklist}
         onAddDoc={addDoc}
-        files={state.files}
+        files={allFiles(state)}
         onAddFile={addFile}
         onRemoveFile={removeFile}
         onOpenFile={openLink}
@@ -291,5 +296,6 @@ export default function App() {
         />
       )}
     </div>
+    </LibraryProvider>
   );
 }

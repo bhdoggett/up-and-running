@@ -174,6 +174,37 @@
   background: var(--danger-soft);
 }
 
+/* File rows show the filename with a quieter "where it's used" line. */
+.fileBtn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+.fileName {
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fileWhere {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fileBtn:hover .fileName {
+  color: var(--accent);
+}
+
 .nameInput {
   flex: 1;
   min-width: 0;

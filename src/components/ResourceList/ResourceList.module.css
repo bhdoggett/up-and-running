@@ -19,6 +19,7 @@
   color: var(--text-faint);
 }
 .rowBody {
+  position: relative;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -156,6 +157,65 @@
 .editActions {
   display: flex;
   gap: 0.35rem;
+}
+
+/* Internal links (docs/checklists) read differently from outward links. */
+.internal {
+  color: var(--done);
+}
+.internal:hover {
+  color: var(--done);
+  text-decoration: underline;
+}
+
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+.picker {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 21;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 0.3rem;
+  width: 230px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.pickerLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  padding: 0.35rem 0.5rem 0.2rem;
+}
+.pickerEmpty {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  padding: 0.1rem 0.5rem 0.3rem;
+}
+.pickerItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.5rem;
+  color: var(--text);
+  font-size: 0.86rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pickerItem:hover {
+  background: var(--accent-soft);
 }
 .remove:hover {
   color: var(--danger);

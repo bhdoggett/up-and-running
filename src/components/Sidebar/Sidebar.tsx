@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { confirm } from "@tauri-apps/plugin-dialog";
-import type { Checklist, Doc, ItemKind, Resource, Selection } from "../../types";
+import type { Checklist, Doc, FileUse, ItemKind, Selection } from "../../types";
 import { allTasks } from "../../types";
 import styles from "./Sidebar.module.css";
 
@@ -13,7 +13,7 @@ interface Props {
   onAddDoc: () => void;
   onRename: (kind: ItemKind, id: string, name: string) => void;
   onDelete: (kind: ItemKind, id: string) => void;
-  files: Resource[];
+  files: FileUse[];
   onAddFile: () => void;
   onRemoveFile: (id: string) => void;
   onOpenFile: (target: string) => void;
@@ -236,25 +236,30 @@ export default function Sidebar({
         </div>
         <ul className={styles.list}>
           {files.length === 0 && <li className={styles.empty}>No files yet.</li>}
-          {files.map((f) => (
-            <li key={f.id} className={styles.row}>
+          {files.map(({ resource, where }) => (
+            <li key={resource.id} className={styles.row}>
               <button
-                className={styles.itemBtn}
-                onClick={() => onOpenFile(f.target)}
-                title={f.target}
+                className={styles.fileBtn}
+                onClick={() => onOpenFile(resource.target)}
+                title={`${resource.target}\nUsed in: ${where}`}
               >
-                {f.label}
+                <span className={styles.fileName}>{resource.label}</span>
+                <span className={styles.fileWhere}>{where}</span>
               </button>
-              <button
-                className={styles.rowDelete}
-                onClick={() => onRemoveFile(f.id)}
-                title="Remove from list (the file itself stays on disk)"
-                aria-label="Remove file"
-              >
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                  <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </button>
+              {/* Only library-owned files can be removed here; ones attached to a
+                  checklist or doc are removed where they're used. */}
+              {where === "Library" && (
+                <button
+                  className={styles.rowDelete}
+                  onClick={() => onRemoveFile(resource.id)}
+                  title="Remove from list (the file itself stays on disk)"
+                  aria-label="Remove file"
+                >
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                    <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              )}
             </li>
           ))}
         </ul>

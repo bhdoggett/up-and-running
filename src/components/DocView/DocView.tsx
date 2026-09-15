@@ -5,6 +5,7 @@ import MarkdownEditor from "../MarkdownEditor/MarkdownEditor";
 import ResourceList from "../ResourceList/ResourceList";
 import { resolveAppImage, openLink } from "../../appLinks";
 import { exportDocToHtml } from "../../exportHtml";
+import { useNameMap } from "../../library";
 import styles from "./DocView.module.css";
 
 interface Props {
@@ -18,6 +19,7 @@ export default function DocView({ doc, onChange }: Props) {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const names = useNameMap();
 
   function startRename() {
     setNameDraft(doc.name);
@@ -30,7 +32,7 @@ export default function DocView({ doc, onChange }: Props) {
 
   async function handleExport() {
     try {
-      const path = await exportDocToHtml(doc);
+      const path = await exportDocToHtml(doc, names);
       if (path) {
         setToast(`Exported to ${path}`);
         setTimeout(() => setToast(null), 4000);

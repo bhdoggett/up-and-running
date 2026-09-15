@@ -46,7 +46,3 @@ export async function openLink(href: string): Promise<void> {
   }
 }
 
-/** What to show for a resource: its label, or the target when unlabeled. */
-export function displayLabel(r: { label: string; target: string }): string {
-  return r.label.trim() || r.target;
-}

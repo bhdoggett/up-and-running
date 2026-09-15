@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { openUrl, openPath } from "@tauri-apps/plugin-opener";
 import type { Resource, Task } from "../../types";
-import { newId } from "../../types";
 import MarkdownView from "../MarkdownView/MarkdownView";
 import MarkdownEditor from "../MarkdownEditor/MarkdownEditor";
-import { resolveAppImage, openLink, displayLabel } from "../../appLinks";
+import ResourceList from "../ResourceList/ResourceList";
+import { resolveAppImage, openLink } from "../../appLinks";
+import { useLibrary, useResourceLabel, isInternal } from "../../library";
 import styles from "./TaskItem.module.css";
 
 interface Props {
@@ -26,73 +25,21 @@ export default function TaskItem({
 }: Props) {
   const [expanded, setExpanded] = useState(autoEdit);
   const [editing, setEditing] = useState(autoEdit);
-  const [newLinkLabel, setNewLinkLabel] = useState("");
-  const [newLinkUrl, setNewLinkUrl] = useState("");
+  const { navigate } = useLibrary();
+  const labelFor = useResourceLabel();
 
   const hasBody = task.details.trim() !== "" || task.resources.length > 0;
 
-  async function openResource(r: Resource) {
-    try {
-      if (r.kind === "web") {
-        await openUrl(r.target);
-      } else {
-        await openPath(r.target);
-      }
-    } catch (e) {
-      console.error("Failed to open resource", e);
+  function openResource(r: Resource) {
+    if (isInternal(r.kind)) {
+      navigate({ kind: r.kind as "doc" | "checklist", id: r.target });
+    } else {
+      openLink(r.target);
     }
   }
 
   function patch(changes: Partial<Task>) {
     onUpdate({ ...task, ...changes });
-  }
-
-  function addWebLink() {
-    const url = newLinkUrl.trim();
-    if (!url) return;
-    const label = newLinkLabel.trim() || url;
-    patch({
-      resources: [
-        ...task.resources,
-        { id: newId(), label, kind: "web", target: url },
-      ],
-    });
-    setNewLinkLabel("");
-    setNewLinkUrl("");
-  }
-
-  async function addFileLink() {
-    const selected = await openDialog({
-      title: "Choose a tutorial video, document, or any file",
-      multiple: false,
-      // No filter — attachments can be any file type (videos, PDFs, Office docs, etc.).
-    });
-    if (typeof selected !== "string") return; // cancelled
-    const fallbackName = selected.split(/[\\/]/).pop() || selected;
-    patch({
-      resources: [
-        ...task.resources,
-        {
-          id: newId(),
-          label: newLinkLabel.trim() || fallbackName,
-          kind: "file",
-          target: selected,
-        },
-      ],
-    });
-    setNewLinkLabel("");
-  }
-
-  function updateResource(id: string, changes: Partial<Resource>) {
-    patch({
-      resources: task.resources.map((r) =>
-        r.id === id ? { ...r, ...changes } : r,
-      ),
-    });
-  }
-
-  function removeResource(id: string) {
-    patch({ resources: task.resources.filter((r) => r.id !== id) });
   }
 
   return (
@@ -173,17 +120,23 @@ export default function TaskItem({
             <ul className={styles.resources}>
               {task.resources.map((r) => (
                 <li key={r.id} className={styles.resource}>
-                  <button className={styles.resLink} onClick={() => openResource(r)}>
+                  <button
+                    className={`${styles.resLink} ${isInternal(r.kind) ? styles.internal : ""}`}
+                    onClick={() => openResource(r)}
+                    title={isInternal(r.kind) ? `Open ${r.kind}` : r.target}
+                  >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                       {r.kind === "web" ? (
                         <path d="M8 1a7 7 0 100 14A7 7 0 008 1zM1.5 8h13M8 1.5c1.7 1.6 2.6 3.9 2.6 6.5S9.7 12.9 8 14.5C6.3 12.9 5.4 10.6 5.4 8S6.3 3.1 8 1.5z" stroke="currentColor" strokeWidth="1.1" />
-                      ) : (
+                      ) : r.kind === "file" ? (
                         <path d="M4.5 2.5h4l3 3v8h-7v-11zM8.5 2.5v3h3" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+                      ) : (
+                        <path d="M6.5 9.5l3-3M5 8L3.5 9.5a2.1 2.1 0 003 3L8 11M11 8l1.5-1.5a2.1 2.1 0 00-3-3L8 5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
                       )}
                     </svg>
-                    {displayLabel(r)}
+                    {labelFor(r)}
                     <span className={styles.resKind}>
-                      {r.kind === "web" ? "↗" : "· file"}
+                      {r.kind === "web" ? "↗" : r.kind === "file" ? "· file" : `· ${r.kind}`}
                     </span>
                   </button>
                 </li>
@@ -216,56 +169,11 @@ export default function TaskItem({
           </div>
 
           <div>
-            <div className={styles.label}>Links & tutorials</div>
-            <ul className={styles.resources}>
-              {task.resources.map((r) => (
-                <li key={r.id} className={styles.resEditRow}>
-                  <input
-                    className={styles.input}
-                    value={r.label}
-                    onChange={(e) => updateResource(r.id, { label: e.target.value })}
-                    placeholder="Label"
-                  />
-                  <span className={styles.resKind}>
-                    {r.kind === "web" ? "web" : "file"}
-                  </span>
-                  <button
-                    className={`${styles.iconBtn} ${styles.danger}`}
-                    onClick={() => removeResource(r.id)}
-                    title="Remove link"
-                    aria-label="Remove link"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                    </svg>
-                  </button>
-                </li>
-              ))}
-            </ul>
-
-            <div className={styles.addRow} style={{ marginTop: "0.5rem" }}>
-              <input
-                className={styles.input}
-                style={{ flex: "1 1 8rem" }}
-                value={newLinkLabel}
-                onChange={(e) => setNewLinkLabel(e.target.value)}
-                placeholder="Link label (optional)"
-              />
-              <input
-                className={styles.input}
-                style={{ flex: "2 1 12rem" }}
-                value={newLinkUrl}
-                onChange={(e) => setNewLinkUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addWebLink()}
-                placeholder="https://… (web link)"
-              />
-              <button className={styles.smallBtn} onClick={addWebLink}>
-                + Web link
-              </button>
-              <button className={styles.smallBtn} onClick={addFileLink}>
-                + Local file
-              </button>
-            </div>
+            <div className={styles.label}>Links, files &amp; related items</div>
+            <ResourceList
+              resources={task.resources}
+              onChange={(resources) => patch({ resources })}
+            />
           </div>
 
           <div className={styles.editActions}>

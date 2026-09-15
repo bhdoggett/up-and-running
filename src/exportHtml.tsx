@@ -35,12 +35,41 @@ function renderDetails(details: string): string {
   return `<div class="export-prose">${inner}</div>`;
 }
 
+/**
+ * Internal links carry no label when they follow the target's name, which the
+ * exported page can't look up. Bake the current names in before rendering.
+ */
+export type NameMap = Record<string, string>;
+
+function fillLabels(resources: Resource[], names: NameMap): Resource[] {
+  return resources.map((r) =>
+    (r.kind === "doc" || r.kind === "checklist") && !r.label.trim()
+      ? { ...r, label: names[r.target] ?? `(missing ${r.kind})` }
+      : r,
+  );
+}
+
+function withResolvedLabels(checklist: Checklist, names: NameMap): Checklist {
+  return {
+    ...checklist,
+    resources: fillLabels(checklist.resources, names),
+    sections: checklist.sections.map((s) => ({
+      ...s,
+      tasks: s.tasks.map((t) => ({ ...t, resources: fillLabels(t.resources, names) })),
+    })),
+  };
+}
+
 function renderResources(resources: Resource[]): string {
   if (resources.length === 0) return "";
   const items = resources
     .map((r) => {
       if (r.kind === "web") {
-        return `<li><a href="${escapeHtml(r.target)}" target="_blank" rel="noopener noreferrer">${escapeHtml(r.label)}</a></li>`;
+        return `<li><a href="${escapeHtml(r.target)}" target="_blank" rel="noopener noreferrer">${escapeHtml(r.label || r.target)}</a></li>`;
+      }
+      if (r.kind === "doc" || r.kind === "checklist") {
+        // In-app links can't navigate outside the app; name them instead.
+        return `<li><span class="file-res">${escapeHtml(r.label || `(${r.kind})`)}</span> <span class="file-note">— ${r.kind} in the Up and Running app</span></li>`;
       }
       if (r.data) {
         // Bundled attachment — downloadable straight from this file.
@@ -317,7 +346,10 @@ export function renderDocHtml(doc: Doc): string {
 }
 
 /** Export a doc as a standalone page. Returns the path, or null if cancelled. */
-export async function exportDocToHtml(doc: Doc): Promise<string | null> {
+export async function exportDocToHtml(
+  doc: Doc,
+  names: NameMap = {},
+): Promise<string | null> {
   const includeAttachments = await askIncludeDocAttachments(doc);
   const path = await save({
     title: "Export doc as HTML",
@@ -326,7 +358,10 @@ export async function exportDocToHtml(doc: Doc): Promise<string | null> {
   });
   if (!path) return null;
   const portable = await prepareDocPortable(doc, includeAttachments);
-  await writeTextFile(path, renderDocHtml(portable));
+  await writeTextFile(
+    path,
+    renderDocHtml({ ...portable, resources: fillLabels(portable.resources, names) }),
+  );
   return path;
 }
 
@@ -364,6 +399,7 @@ function askBundle(count: number, bytes: number): Promise<boolean> {
 // null if cancelled.
 export async function exportChecklistToHtml(
   checklist: Checklist,
+  names: NameMap = {},
 ): Promise<string | null> {
   const includeAttachments = await askIncludeAttachments(checklist);
   const path = await save({
@@ -373,7 +409,7 @@ export async function exportChecklistToHtml(
   });
   if (!path) return null;
   const portable = await preparePortable(checklist, includeAttachments);
-  await writeTextFile(path, renderChecklistHtml(portable));
+  await writeTextFile(path, renderChecklistHtml(withResolvedLabels(portable, names)));
   return path;
 }
 
@@ -381,6 +417,7 @@ export async function exportChecklistToHtml(
 // copy of the app. Images are inlined so it's portable across machines.
 export async function exportChecklistToUar(
   checklist: Checklist,
+  names: NameMap = {},
 ): Promise<string | null> {
   const includeAttachments = await askIncludeAttachments(checklist);
   const path = await save({
@@ -390,6 +427,9 @@ export async function exportChecklistToUar(
   });
   if (!path) return null;
   const portable = await preparePortable(checklist, includeAttachments);
-  await writeTextFile(path, JSON.stringify(portable, null, 2));
+  await writeTextFile(
+    path,
+    JSON.stringify(withResolvedLabels(portable, names), null, 2),
+  );
   return path;
 }

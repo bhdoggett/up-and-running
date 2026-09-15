@@ -2,13 +2,20 @@
 // A Checklist is one event-setup guide (e.g. "Sunday Service Setup").
 // Each Task is one step; steps expand to show details and tutorial resources.
 
-export type ResourceKind = "web" | "file";
+/**
+ * "web" and "file" point outside the app; "doc" and "checklist" are internal
+ * links whose target is another item's id, so clicking navigates in-app.
+ */
+export type ResourceKind = "web" | "file" | "doc" | "checklist";
 
 export interface Resource {
   id: string;
   label: string;
   kind: ResourceKind;
-  /** For "web": a URL. For "file": an absolute path on this machine. */
+  /**
+   * For "web": a URL. For "file": an absolute path on this machine.
+   * For "doc"/"checklist": the id of the item being linked to.
+   */
   target: string;
   /**
    * Set only inside an export: a base64 data: URI holding the attachment's bytes
@@ -51,6 +58,52 @@ export interface Checklist {
 /** Every step in the checklist, in display order. */
 export function allTasks(checklist: Checklist): Task[] {
   return checklist.sections.flatMap((s) => s.tasks);
+}
+
+/** Where a file is referenced, for the Files list in the sidebar. */
+export interface FileUse {
+  resource: Resource;
+  /** Human-readable origin, e.g. "Sunday Service Setup › Power on the board". */
+  where: string;
+}
+
+/**
+ * Every file referenced anywhere in the app — standalone library files plus
+ * files attached to checklists, their steps, and docs — deduplicated by path so
+ * the same file used in three places shows once.
+ */
+export function allFiles(state: AppState): FileUse[] {
+  const uses: FileUse[] = [];
+
+  for (const r of state.files) {
+    if (r.kind === "file") uses.push({ resource: r, where: "Library" });
+  }
+  for (const c of state.checklists) {
+    for (const r of c.resources) {
+      if (r.kind === "file") uses.push({ resource: r, where: c.name });
+    }
+    for (const section of c.sections) {
+      for (const t of section.tasks) {
+        for (const r of t.resources) {
+          if (r.kind === "file") {
+            uses.push({ resource: r, where: `${c.name} › ${t.title}` });
+          }
+        }
+      }
+    }
+  }
+  for (const d of state.docs) {
+    for (const r of d.resources) {
+      if (r.kind === "file") uses.push({ resource: r, where: d.name });
+    }
+  }
+
+  // Collapse duplicates by path, keeping the first place we saw it.
+  const seen = new Map<string, FileUse>();
+  for (const use of uses) {
+    if (!seen.has(use.resource.target)) seen.set(use.resource.target, use);
+  }
+  return [...seen.values()];
 }
 
 /**

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Checklist, Section } from "../../types";
 import { newId, allTasks } from "../../types";
 import { exportChecklistToHtml, exportChecklistToUar } from "../../exportHtml";
+import { useNameMap } from "../../library";
 import SectionBlock from "../SectionBlock/SectionBlock";
 import ResourceList from "../ResourceList/ResourceList";
 import styles from "./ChecklistView.module.css";
@@ -15,6 +16,7 @@ export default function ChecklistView({ checklist, onChange }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
+  const names = useNameMap();
 
   const tasks = allTasks(checklist);
   const done = tasks.filter((t) => t.done).length;
@@ -76,8 +78,8 @@ export default function ChecklistView({ checklist, onChange }: Props) {
     try {
       const path =
         kind === "html"
-          ? await exportChecklistToHtml(checklist)
-          : await exportChecklistToUar(checklist);
+          ? await exportChecklistToHtml(checklist, names)
+          : await exportChecklistToUar(checklist, names);
       if (path) {
         setToast(`Exported to ${path}`);
         setTimeout(() => setToast(null), 4000);
