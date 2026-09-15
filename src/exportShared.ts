@@ -1,5 +1,6 @@
 import { readFile, stat } from "@tauri-apps/plugin-fs";
 import type { Checklist, Resource } from "./types";
+import { allTasks } from "./types";
 import { isLocalPath } from "./components/MarkdownView/MarkdownView";
 
 const MARKDOWN_IMAGE_RE = /!\[[^\]]*\]\(\s*([^)\s]+)[^)]*\)/g;
@@ -39,7 +40,7 @@ function mimeFromExt(path: string): string {
 export function localAttachments(checklist: Checklist): Resource[] {
   const all = [
     ...checklist.resources,
-    ...checklist.tasks.flatMap((t) => t.resources),
+    ...allTasks(checklist).flatMap((t) => t.resources),
   ];
   return all.filter((r) => r.kind === "file" && isLocalPath(r.target));
 }
@@ -94,7 +95,7 @@ async function toDataUri(path: string): Promise<string | null> {
 export async function embedLocalImages(checklist: Checklist): Promise<Checklist> {
   // Collect unique local image paths across all tasks.
   const paths = new Set<string>();
-  for (const task of checklist.tasks) {
+  for (const task of allTasks(checklist)) {
     for (const m of task.details.matchAll(MARKDOWN_IMAGE_RE)) {
       const src = m[1];
       if (isLocalPath(src)) paths.add(src);
@@ -113,12 +114,15 @@ export async function embedLocalImages(checklist: Checklist): Promise<Checklist>
 
   return {
     ...checklist,
-    tasks: checklist.tasks.map((task) => ({
-      ...task,
-      details: task.details.replace(MARKDOWN_IMAGE_RE, (whole, src) => {
-        const uri = map.get(src);
-        return uri ? whole.replace(src, uri) : whole;
-      }),
+    sections: checklist.sections.map((section) => ({
+      ...section,
+      tasks: section.tasks.map((task) => ({
+        ...task,
+        details: task.details.replace(MARKDOWN_IMAGE_RE, (whole, src) => {
+          const uri = map.get(src);
+          return uri ? whole.replace(src, uri) : whole;
+        }),
+      })),
     })),
   };
 }
@@ -139,10 +143,15 @@ async function embedAttachments(checklist: Checklist): Promise<Checklist> {
   return {
     ...checklist,
     resources: await embedResourceList(checklist.resources),
-    tasks: await Promise.all(
-      checklist.tasks.map(async (task) => ({
-        ...task,
-        resources: await embedResourceList(task.resources),
+    sections: await Promise.all(
+      checklist.sections.map(async (section) => ({
+        ...section,
+        tasks: await Promise.all(
+          section.tasks.map(async (task) => ({
+            ...task,
+            resources: await embedResourceList(task.resources),
+          })),
+        ),
       })),
     ),
   };

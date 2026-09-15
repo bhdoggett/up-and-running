@@ -1,5 +1,6 @@
 import { load, type Store } from "@tauri-apps/plugin-store";
 import type { AppState } from "./types";
+import { withSections } from "./types";
 import { seedState } from "./seed";
 
 // Persist the whole app state as a single JSON blob in the app's data dir.
@@ -20,14 +21,11 @@ export async function loadState(): Promise<AppState> {
   const store = await getStore();
   const saved = await store.get<AppState>(STATE_KEY);
   if (saved && Array.isArray(saved.checklists)) {
-    // Backfill fields added in later versions so older saved data stays valid.
+    // Migrate data saved before sections existed, and backfill any missing
+    // fields, so older state stays valid.
     return {
       ...saved,
-      checklists: saved.checklists.map((c) => ({
-        ...c,
-        resources: Array.isArray(c.resources) ? c.resources : [],
-        tasks: Array.isArray(c.tasks) ? c.tasks : [],
-      })),
+      checklists: saved.checklists.map(withSections),
     };
   }
   // First run: seed with an example and persist it.

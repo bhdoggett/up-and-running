@@ -2,7 +2,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeFile, mkdir } from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import type { Checklist, Resource, Task } from "./types";
-import { newId } from "./types";
+import { newId, withSections } from "./types";
 
 function bytesFromDataUri(uri: string): Uint8Array {
   const comma = uri.indexOf(",");
@@ -28,13 +28,13 @@ function extractPayloadFromHtml(html: string): unknown {
 
 function asChecklist(raw: unknown): Checklist {
   const c = raw as Checklist;
-  if (
-    !raw ||
-    typeof raw !== "object" ||
-    !Array.isArray(c.tasks) ||
-    typeof c.name !== "string"
-  ) {
-    throw new Error("File doesn't contain a valid checklist.");
+  // Accept both shapes: `sections` (current) or a flat `tasks` array (older
+  // exports, and what an LLM may produce from the simpler example).
+  const hasSteps = Array.isArray(c?.sections) || Array.isArray(c?.tasks);
+  if (!raw || typeof raw !== "object" || !hasSteps || typeof c.name !== "string") {
+    throw new Error(
+      "That doesn't look like a checklist — it needs a \"name\" and a \"sections\" or \"tasks\" list.",
+    );
   }
   return c;
 }
@@ -59,10 +59,12 @@ async function restoreResource(r: Resource, dir: string | null): Promise<Resourc
 // progress reset, bundled attachments written back to disk. Shared by every
 // import path (file, pasted JSON, AI-assisted).
 export async function buildImportedChecklist(raw: unknown): Promise<Checklist> {
-  const checklist = asChecklist(raw);
+  // withSections also accepts the older flat-`tasks` shape, so exports from
+  // before sections (and LLM output using either form) import cleanly.
+  const checklist = withSections(asChecklist(raw));
   const resourceLists = [
-    checklist.resources ?? [],
-    ...checklist.tasks.map((t) => t.resources ?? []),
+    checklist.resources,
+    ...checklist.sections.flatMap((s) => s.tasks.map((t) => t.resources ?? [])),
   ];
 
   // Create the attachments dir once, only if something is bundled.
@@ -79,16 +81,23 @@ export async function buildImportedChecklist(raw: unknown): Promise<Checklist> {
     id: newId(),
     name: checklist.name,
     resources: await Promise.all(
-      (checklist.resources ?? []).map((r) => restoreResource(r, dir)),
+      checklist.resources.map((r) => restoreResource(r, dir)),
     ),
-    tasks: await Promise.all(
-      checklist.tasks.map(async (task): Promise<Task> => ({
+    sections: await Promise.all(
+      checklist.sections.map(async (section) => ({
         id: newId(),
-        title: task.title,
-        details: task.details,
-        done: false,
-        resources: await Promise.all(
-          (task.resources ?? []).map((r) => restoreResource(r, dir)),
+        name: section.name ?? "",
+        collapsed: Boolean(section.collapsed),
+        tasks: await Promise.all(
+          section.tasks.map(async (task): Promise<Task> => ({
+            id: newId(),
+            title: task.title,
+            details: task.details ?? "",
+            done: false,
+            resources: await Promise.all(
+              (task.resources ?? []).map((r) => restoreResource(r, dir)),
+            ),
+          })),
         ),
       })),
     ),

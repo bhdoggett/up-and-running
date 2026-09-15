@@ -2,6 +2,7 @@ import { save, confirm } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { Checklist } from "./types";
+import { allTasks } from "./types";
 import MarkdownView from "./components/MarkdownView/MarkdownView";
 import {
   preparePortable,
@@ -49,8 +50,8 @@ function renderResources(resources: Checklist["tasks"][number]["resources"]): st
   return `<ul class="resources">${items}</ul>`;
 }
 
-function renderTasks(checklist: Checklist): string {
-  return checklist.tasks
+function renderTasks(tasks: Checklist["sections"][number]["tasks"]): string {
+  return tasks
     .map((task) => {
       const resourcesBlock = renderResources(task.resources);
       return `
@@ -66,11 +67,35 @@ function renderTasks(checklist: Checklist): string {
     .join("");
 }
 
+// Sections become native <details> elements, so collapsing works with no JS.
+// A lone unnamed section renders as a plain list, matching the app.
+function renderSections(checklist: Checklist): string {
+  const showHeaders =
+    checklist.sections.length > 1 ||
+    (checklist.sections[0]?.name ?? "").trim() !== "";
+
+  return checklist.sections
+    .map((section) => {
+      const list = `<ol class="tasks">${renderTasks(section.tasks)}\n    </ol>`;
+      if (!showHeaders) return list;
+      return `
+    <details class="section"${section.collapsed ? "" : " open"}>
+      <summary class="section-head">
+        <span class="section-name">${escapeHtml(section.name)}</span>
+        <span class="section-count" data-section="${escapeHtml(section.id)}"></span>
+      </summary>
+      ${list}
+    </details>`;
+    })
+    .join("");
+}
+
 // Build a single self-contained HTML document. It renders the checklist read-only
 // (interactive checkboxes saved in the viewer's browser) AND embeds the full
 // checklist JSON in a <script> tag so the desktop app can re-import it.
 export function renderChecklistHtml(checklist: Checklist): string {
   const storageKey = `up-and-running:${checklist.id}`;
+  const stepCount = allTasks(checklist).length;
   // Embed the data payload for round-tripping. Escape "<" so "</script>" in any
   // user text can't close the tag early; JSON.parse decodes < back to "<".
   const payload = JSON.stringify(checklist).replace(/</g, "\\u003c");
@@ -97,6 +122,28 @@ export function renderChecklistHtml(checklist: Checklist): string {
   .overview-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; margin-bottom: .3rem; }
   .overview ul.resources { margin: 0; }
   ol.tasks { list-style: none; margin: 0; padding: 0; }
+  details.section { margin-bottom: 1.2rem; }
+  .section-head {
+    display: flex; align-items: center; gap: .5rem; cursor: pointer;
+    padding: .3rem 0 .45rem; border-bottom: 1px solid #e5e7eb; margin-bottom: .6rem;
+    list-style: none;
+  }
+  .section-head::-webkit-details-marker { display: none; }
+  .section-head::before {
+    content: ""; flex: none; width: 0; height: 0;
+    border-left: 5px solid #9ca3af; border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+    transition: transform .15s ease;
+  }
+  details[open] > .section-head::before { transform: rotate(90deg); }
+  .section-name {
+    font-size: .8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; color: #6b7280; flex: 1;
+  }
+  .section-count {
+    font-size: .72rem; color: #9ca3af; border: 1px solid #e5e7eb;
+    border-radius: 999px; padding: .05rem .5rem; background: #fff;
+  }
+  .section-count.complete { color: #059669; border-color: #a7f3d0; }
   .task { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: .75rem; }
   .task-head { display: flex; align-items: flex-start; gap: .7rem; cursor: pointer; font-weight: 600; }
   .task-check { width: 1.15rem; height: 1.15rem; margin-top: .18rem; flex: none; accent-color: #2563eb; cursor: pointer; }
@@ -132,6 +179,8 @@ export function renderChecklistHtml(checklist: Checklist): string {
     body { background: #16181c; color: #e7e9ea; }
     .task, .overview { background: #1f2226; border-color: #33373d; }
     .overview-label { color: #8b929c; }
+    .section-head { border-bottom-color: #33373d; }
+    .section-count { background: #1f2226; border-color: #33373d; }
     .sub, .file-note { color: #8b929c; }
     .export-prose { color: #c3c7cd; }
     .export-prose h1, .export-prose h2, .export-prose h3 { color: #e7e9ea; }
@@ -144,11 +193,10 @@ export function renderChecklistHtml(checklist: Checklist): string {
   <div class="wrap">
     <header>
       <h1>${escapeHtml(checklist.name)}</h1>
-      <div class="sub">${checklist.tasks.length} step${checklist.tasks.length === 1 ? "" : "s"} · progress is saved in this browser</div>
+      <div class="sub">${stepCount} step${stepCount === 1 ? "" : "s"} · progress is saved in this browser</div>
     </header>
     ${checklist.resources.length > 0 ? `<div class="overview"><div class="overview-label">Overview links &amp; files</div>${renderResources(checklist.resources)}</div>` : ""}
-    <ol class="tasks">${renderTasks(checklist)}
-    </ol>
+    ${renderSections(checklist)}
     <button class="reset" type="button">Reset all checkboxes</button>
   </div>
   <script type="application/json" id="uar-data">${payload}</script>
@@ -159,18 +207,34 @@ export function renderChecklistHtml(checklist: Checklist): string {
   function saveDone(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
   var done = loadDone();
   var tasks = document.querySelectorAll(".task");
+
+  // Keep each section's "done/total" badge in sync with its checkboxes.
+  function refreshCounts() {
+    document.querySelectorAll("details.section").forEach(function (sec) {
+      var badge = sec.querySelector(".section-count");
+      if (!badge) return;
+      var boxes = sec.querySelectorAll(".task-check");
+      var checked = sec.querySelectorAll(".task-check:checked").length;
+      badge.textContent = checked + "/" + boxes.length;
+      badge.classList.toggle("complete", boxes.length > 0 && checked === boxes.length);
+    });
+  }
+
   tasks.forEach(function (li) {
     var id = li.getAttribute("data-id");
     var box = li.querySelector(".task-check");
     if (done[id]) { box.checked = true; li.classList.add("done"); }
     box.addEventListener("change", function () {
       done[id] = box.checked; li.classList.toggle("done", box.checked); saveDone(done);
+      refreshCounts();
     });
   });
   document.querySelector(".reset").addEventListener("click", function () {
     done = {}; saveDone(done);
     tasks.forEach(function (li) { li.querySelector(".task-check").checked = false; li.classList.remove("done"); });
+    refreshCounts();
   });
+  refreshCounts();
 })();
 </script>
 </body>

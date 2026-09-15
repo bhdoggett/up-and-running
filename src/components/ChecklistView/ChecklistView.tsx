@@ -1,8 +1,8 @@
 import { useState } from "react";
-import type { Checklist, Task } from "../../types";
-import { newId } from "../../types";
+import type { Checklist, Section } from "../../types";
+import { newId, allTasks } from "../../types";
 import { exportChecklistToHtml, exportChecklistToUar } from "../../exportHtml";
-import TaskItem from "../TaskItem/TaskItem";
+import SectionBlock from "../SectionBlock/SectionBlock";
 import ResourceList from "../ResourceList/ResourceList";
 import styles from "./ChecklistView.module.css";
 
@@ -12,15 +12,18 @@ interface Props {
 }
 
 export default function ChecklistView({ checklist, onChange }: Props) {
-  const [newTitle, setNewTitle] = useState("");
   const [toast, setToast] = useState<string | null>(null);
-  const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
 
-  const done = checklist.tasks.filter((t) => t.done).length;
-  const total = checklist.tasks.length;
+  const tasks = allTasks(checklist);
+  const done = tasks.filter((t) => t.done).length;
+  const total = tasks.length;
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  // A single unnamed section is the "no sections yet" state: render it bare.
+  const showHeaders =
+    checklist.sections.length > 1 || checklist.sections[0]?.name.trim() !== "";
 
   function startRename() {
     setNameDraft(checklist.name);
@@ -31,39 +34,39 @@ export default function ChecklistView({ checklist, onChange }: Props) {
     setEditingName(false);
   }
 
-  function updateTask(updated: Task) {
+  function updateSection(updated: Section) {
     onChange({
       ...checklist,
-      tasks: checklist.tasks.map((t) => (t.id === updated.id ? updated : t)),
+      sections: checklist.sections.map((s) => (s.id === updated.id ? updated : s)),
     });
   }
-  function toggleDone(id: string) {
+
+  function deleteSection(id: string) {
+    const remaining = checklist.sections.filter((s) => s.id !== id);
     onChange({
       ...checklist,
-      tasks: checklist.tasks.map((t) =>
-        t.id === id ? { ...t, done: !t.done } : t,
-      ),
+      // Never leave zero sections — fall back to one empty unnamed group.
+      sections: remaining.length
+        ? remaining
+        : [{ id: newId(), name: "", collapsed: false, tasks: [] }],
     });
   }
-  function deleteTask(id: string) {
-    onChange({
-      ...checklist,
-      tasks: checklist.tasks.filter((t) => t.id !== id),
-    });
-  }
-  function addTask() {
-    const title = newTitle.trim();
-    if (!title) return;
-    const task: Task = {
+
+  function addSection() {
+    const section: Section = {
       id: newId(),
-      title,
-      details: "",
-      done: false,
-      resources: [],
+      name: `Section ${checklist.sections.length + 1}`,
+      collapsed: false,
+      tasks: [],
     };
-    onChange({ ...checklist, tasks: [...checklist.tasks, task] });
-    setJustAddedId(task.id);
-    setNewTitle("");
+    onChange({ ...checklist, sections: [...checklist.sections, section] });
+  }
+
+  function setAllCollapsed(collapsed: boolean) {
+    onChange({
+      ...checklist,
+      sections: checklist.sections.map((s) => ({ ...s, collapsed })),
+    });
   }
 
   const [exportOpen, setExportOpen] = useState(false);
@@ -162,37 +165,30 @@ export default function ChecklistView({ checklist, onChange }: Props) {
           </div>
         </div>
 
-        {total === 0 ? (
-          <div className={styles.emptyState}>
-            <h2>No steps yet</h2>
-            <p>Add the first step for this event below.</p>
-          </div>
-        ) : (
-          <ul className={styles.list}>
-            {checklist.tasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                task={task}
-                autoEdit={task.id === justAddedId}
-                onToggleDone={() => toggleDone(task.id)}
-                onUpdate={updateTask}
-                onDelete={() => deleteTask(task.id)}
-              />
-            ))}
-          </ul>
-        )}
-
-        <div className={styles.addTask}>
-          <input
-            className={styles.addInput}
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addTask()}
-            placeholder="Add a step…"
+        {checklist.sections.map((section) => (
+          <SectionBlock
+            key={section.id}
+            section={section}
+            showHeader={showHeaders}
+            onChange={updateSection}
+            onDelete={() => deleteSection(section.id)}
           />
-          <button className={styles.addBtn} onClick={addTask} disabled={!newTitle.trim()}>
-            Add
+        ))}
+
+        <div className={styles.sectionActions}>
+          <button className={styles.ghostBtn} onClick={addSection}>
+            + Add section
           </button>
+          {showHeaders && checklist.sections.length > 1 && (
+            <>
+              <button className={styles.ghostBtn} onClick={() => setAllCollapsed(true)}>
+                Collapse all
+              </button>
+              <button className={styles.ghostBtn} onClick={() => setAllCollapsed(false)}>
+                Expand all
+              </button>
+            </>
+          )}
         </div>
       </div>
 

@@ -28,18 +28,27 @@ object matching the schema below.
       "target": "string — a full https:// URL for kind=web, or an absolute file path for kind=file"
     }
   ],
-  "tasks": [
+  "sections": [
     {
-      "title": "string — one short imperative step, e.g. 'Power on the sound board'",
-      "details": "string — Markdown explaining the step; empty string if there's nothing to add",
-      "done": false,
-      "resources": [ /* same shape as above, for links specific to this step */ ]
+      "name": "string — a group heading, e.g. 'Before doors open'. Use \\"\\" if the source has no groups.",
+      "collapsed": false,
+      "tasks": [
+        {
+          "title": "string — one short imperative step, e.g. 'Power on the sound board'",
+          "details": "string — Markdown explaining the step; empty string if there's nothing to add",
+          "done": false,
+          "resources": [ /* same shape as above, for links specific to this step */ ]
+        }
+      ]
     }
   ]
 }
 
 ## How to map the source
 
+- If the source has headings that group steps (phases, rooms, times of day),
+  make each one a section with that name. If it's just one flat list, use a
+  single section with "name": "".
 - Top-level "resources" are links/files that apply to the WHOLE checklist, such
   as an overview video. Per-step links belong in that step's "resources".
 - "title" is the action itself — keep it under about 60 characters. Move any
@@ -58,12 +67,18 @@ object matching the schema below.
   "resources": [
     { "label": "Full setup walkthrough", "kind": "web", "target": "https://example.com/video" }
   ],
-  "tasks": [
+  "sections": [
     {
-      "title": "Power on the sound board",
-      "details": "Turn on in this order to avoid a loud pop:\\n\\n1. Wall power\\n2. The board\\n3. The speakers\\n\\n**Wait** for the board to finish booting before touching faders.",
-      "done": false,
-      "resources": []
+      "name": "Before doors open",
+      "collapsed": false,
+      "tasks": [
+        {
+          "title": "Power on the sound board",
+          "details": "Turn on in this order to avoid a loud pop:\\n\\n1. Wall power\\n2. The board\\n3. The speakers\\n\\n**Wait** for the board to finish booting before touching faders.",
+          "done": false,
+          "resources": []
+        }
+      ]
     }
   ]
 }

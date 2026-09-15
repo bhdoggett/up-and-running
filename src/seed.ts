@@ -19,7 +19,12 @@ export function seedState(): AppState {
             target: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
           },
         ],
-        tasks: [
+        sections: [
+          {
+            id: newId(),
+            name: "Before doors open",
+            collapsed: false,
+            tasks: [
           {
             id: newId(),
             title: "Unlock the building & turn on lights",
@@ -43,13 +48,30 @@ export function seedState(): AppState {
               },
             ],
           },
+            ],
+          },
           {
             id: newId(),
-            title: "Set up the coffee station",
-            details:
-              "Two urns: one regular, one decaf. Fill to the line, one scoop of grounds per marked level. Start them by 8:15 so they're ready before people arrive.",
-            done: false,
-            resources: [],
+            name: "Hospitality",
+            collapsed: false,
+            tasks: [
+              {
+                id: newId(),
+                title: "Set up the coffee station",
+                details:
+                  "Two urns: one regular, one decaf. Fill to the line, one scoop of grounds per marked level. Start them by 8:15 so they're ready before people arrive.",
+                done: false,
+                resources: [],
+              },
+              {
+                id: newId(),
+                title: "Put out welcome signage",
+                details:
+                  "Sandwich board by the main entrance, plus the directional sign at the parking lot corner.",
+                done: false,
+                resources: [],
+              },
+            ],
           },
         ],
       },

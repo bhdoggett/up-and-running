@@ -26,12 +26,61 @@ export interface Task {
   resources: Resource[];
 }
 
+/**
+ * A named, collapsible group of steps. Every checklist has at least one section;
+ * a section with an empty name renders without a header, so simple checklists
+ * look like a plain list until the user adds real groups.
+ */
+export interface Section {
+  id: string;
+  name: string;
+  collapsed: boolean;
+  tasks: Task[];
+}
+
 export interface Checklist {
   id: string;
   name: string;
   /** Links/files that apply to the whole checklist (e.g. an overview video). */
   resources: Resource[];
-  tasks: Task[];
+  sections: Section[];
+  /** Pre-sections format; migrated into `sections` on load/import. */
+  tasks?: Task[];
+}
+
+/** Every step in the checklist, in display order. */
+export function allTasks(checklist: Checklist): Task[] {
+  return checklist.sections.flatMap((s) => s.tasks);
+}
+
+/**
+ * Normalize a checklist that may predate sections (or come from an older
+ * export): a flat `tasks` array becomes one unnamed section, and missing
+ * fields are backfilled so the UI never sees undefined.
+ */
+export function withSections(c: Checklist): Checklist {
+  const sections: Section[] = Array.isArray(c.sections) && c.sections.length > 0
+    ? c.sections.map((s) => ({
+        id: s.id ?? newId(),
+        name: s.name ?? "",
+        collapsed: Boolean(s.collapsed),
+        tasks: Array.isArray(s.tasks) ? s.tasks : [],
+      }))
+    : [
+        {
+          id: newId(),
+          name: "",
+          collapsed: false,
+          tasks: Array.isArray(c.tasks) ? c.tasks : [],
+        },
+      ];
+
+  return {
+    id: c.id,
+    name: c.name,
+    resources: Array.isArray(c.resources) ? c.resources : [],
+    sections,
+  };
 }
 
 export interface AppState {

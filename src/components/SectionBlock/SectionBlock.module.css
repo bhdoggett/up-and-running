@@ -1,0 +1,148 @@
+.section {
+  margin-bottom: 1.1rem;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.2rem 0.45rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.6rem;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+  text-align: left;
+}
+.chevron {
+  flex: none;
+  color: var(--text-faint);
+  transition: transform 0.15s ease;
+}
+.chevron.open {
+  transform: rotate(90deg);
+}
+.name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.toggle:hover .name,
+.toggle:hover .chevron {
+  color: var(--accent);
+}
+.count {
+  flex: none;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+.complete {
+  color: var(--done);
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.nameInput {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.5rem;
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
+
+.iconBtn {
+  flex: none;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.35rem;
+  color: var(--text-faint);
+  line-height: 0;
+  opacity: 0;
+}
+.head:hover .iconBtn {
+  opacity: 1;
+}
+.iconBtn:hover {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--border);
+}
+.iconBtn.danger:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: transparent;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.empty {
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  padding: 0.3rem 0.2rem 0.6rem;
+}
+
+.addTask {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.addInput {
+  flex: 1;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.75rem;
+  background: transparent;
+  font-size: 0.9rem;
+}
+.addInput:focus {
+  outline: none;
+  border-style: solid;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.addBtn {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  padding: 0 0.9rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.addBtn:hover {
+  background: var(--accent-hover);
+}
+.addBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
