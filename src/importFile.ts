@@ -157,7 +157,13 @@ export async function importChecklistFromFile(): Promise<ImportedItem | null> {
 
 // Import from JSON text pasted into the app (e.g. an LLM's conversion output).
 // Tolerates a ```json fence and surrounding prose by extracting the outer object.
-export async function importChecklistFromJson(text: string): Promise<Checklist> {
+export async function importItemFromJson(text: string): Promise<ImportedItem> {
+  const raw = parseLooseJson(text);
+  if (isDocPayload(raw)) return { kind: "doc", doc: buildImportedDoc(raw) };
+  return { kind: "checklist", checklist: await buildImportedChecklist(raw) };
+}
+
+function parseLooseJson(text: string): unknown {
   const trimmed = text.trim();
   if (!trimmed) throw new Error("Nothing pasted yet.");
 
@@ -172,13 +178,11 @@ export async function importChecklistFromJson(text: string): Promise<Checklist> 
     body = body.slice(start, end + 1);
   }
 
-  let raw: unknown;
   try {
-    raw = JSON.parse(body);
+    return JSON.parse(body);
   } catch (e) {
     throw new Error(
       `That isn't valid JSON: ${e instanceof Error ? e.message : String(e)}`,
     );
   }
-  return buildImportedChecklist(raw);
 }

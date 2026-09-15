@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppState, Checklist, Doc, ItemKind, Selection } from "./types";
+import type { AppState, Checklist, Doc, ItemKind, Resource, Selection } from "./types";
 import { newId } from "./types";
 import { loadState, saveState } from "./storage";
-import { importChecklistFromFile } from "./importFile";
-import { message } from "@tauri-apps/plugin-dialog";
+import { importChecklistFromFile, type ImportedItem } from "./importFile";
+import { openLink } from "./appLinks";
+import { message, open as openDialog } from "@tauri-apps/plugin-dialog";
 import Sidebar from "./components/Sidebar/Sidebar";
 import AiImportDialog from "./components/AiImportDialog/AiImportDialog";
 import ChecklistView from "./components/ChecklistView/ChecklistView";
@@ -167,6 +168,30 @@ export default function App() {
     );
   }
 
+  async function addFile() {
+    const selected = await openDialog({
+      title: "Add a file to the library",
+      multiple: true,
+    });
+    const paths = Array.isArray(selected)
+      ? selected
+      : typeof selected === "string"
+        ? [selected]
+        : [];
+    if (paths.length === 0) return;
+    const added: Resource[] = paths.map((p) => ({
+      id: newId(),
+      label: p.split(/[\\/]/).pop() || p,
+      kind: "file",
+      target: p,
+    }));
+    setState((s) => (s ? { ...s, files: [...s.files, ...added] } : s));
+  }
+
+  function removeFile(id: string) {
+    setState((s) => (s ? { ...s, files: s.files.filter((f) => f.id !== id) } : s));
+  }
+
   function updateDoc(updated: Doc) {
     setState((s) =>
       s
@@ -175,20 +200,22 @@ export default function App() {
     );
   }
 
+  function addImportedItem(item: ImportedItem) {
+    if (item.kind === "doc") {
+      const doc = item.doc;
+      setState((s) =>
+        s ? { ...s, docs: [...s.docs, doc], active: { kind: "doc", id: doc.id } } : s,
+      );
+      return;
+    }
+    addImported(item.checklist);
+  }
+
   async function importChecklist() {
     try {
       const imported = await importChecklistFromFile();
       if (!imported) return;
-      if (imported.kind === "doc") {
-        const doc = imported.doc;
-        setState((s) =>
-          s
-            ? { ...s, docs: [...s.docs, doc], active: { kind: "doc", id: doc.id } }
-            : s,
-        );
-        return;
-      }
-      addImported(imported.checklist);
+      addImportedItem(imported);
     } catch (e) {
       console.error("Import failed", e);
       await message(String(e instanceof Error ? e.message : e), {
@@ -220,6 +247,10 @@ export default function App() {
         onSelect={select}
         onAddChecklist={addChecklist}
         onAddDoc={addDoc}
+        files={state.files}
+        onAddFile={addFile}
+        onRemoveFile={removeFile}
+        onOpenFile={openLink}
         onRename={rename}
         onDelete={remove}
         onImport={importChecklist}
@@ -253,8 +284,8 @@ export default function App() {
       {aiImportOpen && (
         <AiImportDialog
           onClose={() => setAiImportOpen(false)}
-          onImported={(checklist) => {
-            addImported(checklist);
+          onImported={(item) => {
+            addImportedItem(item);
             setAiImportOpen(false);
           }}
         />

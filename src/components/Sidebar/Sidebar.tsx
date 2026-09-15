@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { confirm } from "@tauri-apps/plugin-dialog";
-import type { Checklist, Doc, ItemKind, Selection } from "../../types";
+import type { Checklist, Doc, ItemKind, Resource, Selection } from "../../types";
 import { allTasks } from "../../types";
 import styles from "./Sidebar.module.css";
 
@@ -13,6 +13,10 @@ interface Props {
   onAddDoc: () => void;
   onRename: (kind: ItemKind, id: string, name: string) => void;
   onDelete: (kind: ItemKind, id: string) => void;
+  files: Resource[];
+  onAddFile: () => void;
+  onRemoveFile: (id: string) => void;
+  onOpenFile: (target: string) => void;
   onImport: () => void;
   onAiImport: () => void;
   /** Current width in px (set by the draggable divider in App). */
@@ -35,6 +39,10 @@ export default function Sidebar({
   onAddDoc,
   onRename,
   onDelete,
+  files,
+  onAddFile,
+  onRemoveFile,
+  onOpenFile,
   onImport,
   onAiImport,
   width,
@@ -214,6 +222,42 @@ export default function Sidebar({
           },
           "No docs yet.",
         )}
+
+        {/* Loose files: clicking opens them in their default app. */}
+        <div className={styles.listHead}>
+          <span className={styles.listLabel}>Files</span>
+          <div className={styles.headBtns}>
+            <button className={styles.addBtn} onClick={onAddFile} title="Add a file" aria-label="Add a file">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <ul className={styles.list}>
+          {files.length === 0 && <li className={styles.empty}>No files yet.</li>}
+          {files.map((f) => (
+            <li key={f.id} className={styles.row}>
+              <button
+                className={styles.itemBtn}
+                onClick={() => onOpenFile(f.target)}
+                title={f.target}
+              >
+                {f.label}
+              </button>
+              <button
+                className={styles.rowDelete}
+                onClick={() => onRemoveFile(f.id)}
+                title="Remove from list (the file itself stays on disk)"
+                aria-label="Remove file"
+              >
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                  <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
     </aside>
   );

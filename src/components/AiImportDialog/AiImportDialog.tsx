@@ -1,11 +1,10 @@
 import { useState } from "react";
-import type { Checklist } from "../../types";
-import { copyPromptToClipboard, downloadPrompt } from "../../aiImport";
-import { importChecklistFromJson } from "../../importFile";
+import { copyPromptToClipboard, downloadPrompt, type PromptKind } from "../../aiImport";
+import { importItemFromJson, type ImportedItem } from "../../importFile";
 import styles from "./AiImportDialog.module.css";
 
 interface Props {
-  onImported: (checklist: Checklist) => void;
+  onImported: (item: ImportedItem) => void;
   onClose: () => void;
 }
 
@@ -17,16 +16,17 @@ export default function AiImportDialog({ onImported, onClose }: Props) {
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [kind, setKind] = useState<PromptKind>("checklist");
 
   async function handleCopy() {
-    const ok = await copyPromptToClipboard();
+    const ok = await copyPromptToClipboard(kind);
     setNote(ok ? "Prompt copied to clipboard" : "Couldn't copy — use Download instead");
     setTimeout(() => setNote(null), 3000);
   }
 
   async function handleDownload() {
     try {
-      const path = await downloadPrompt();
+      const path = await downloadPrompt(kind);
       if (path) {
         setNote(`Saved to ${path}`);
         setTimeout(() => setNote(null), 4000);
@@ -41,8 +41,7 @@ export default function AiImportDialog({ onImported, onClose }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const checklist = await importChecklistFromJson(json);
-      onImported(checklist);
+      onImported(await importItemFromJson(json));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -56,14 +55,40 @@ export default function AiImportDialog({ onImported, onClose }: Props) {
         <div className={styles.head}>
           <h2 className={styles.title}>Import from a document</h2>
           <p className={styles.sub}>
-            Turn a Word doc, PDF, or notes into a checklist using any AI chat —
-            no account setup needed here.
+            Turn a Word doc, PDF, or notes into a checklist or reference doc
+            using any AI chat — no account setup needed here.
           </p>
         </div>
 
         <div className={styles.body}>
           <div className={styles.step}>
             <span className={styles.num}>1</span>
+            <div className={styles.stepBody}>
+              <div className={styles.stepTitle}>What are you converting?</div>
+              <div className={styles.btnRow}>
+                <button
+                  className={`${styles.btn} ${kind === "checklist" ? styles.chosen : ""}`}
+                  onClick={() => setKind("checklist")}
+                >
+                  A checklist
+                </button>
+                <button
+                  className={`${styles.btn} ${kind === "doc" ? styles.chosen : ""}`}
+                  onClick={() => setKind("doc")}
+                >
+                  A reference doc
+                </button>
+              </div>
+              <p className={styles.stepText} style={{ marginTop: "0.45rem" }}>
+                {kind === "checklist"
+                  ? "Steps to work through — becomes a checklist with sections."
+                  : "Explains how something works — keeps the original wording and layout as Markdown."}
+              </p>
+            </div>
+          </div>
+
+          <div className={styles.step}>
+            <span className={styles.num}>2</span>
             <div className={styles.stepBody}>
               <div className={styles.stepTitle}>Get the conversion prompt</div>
               <p className={styles.stepText}>
@@ -82,7 +107,7 @@ export default function AiImportDialog({ onImported, onClose }: Props) {
           </div>
 
           <div className={styles.step}>
-            <span className={styles.num}>2</span>
+            <span className={styles.num}>3</span>
             <div className={styles.stepBody}>
               <div className={styles.stepTitle}>Paste it into an AI chat</div>
               <p className={styles.stepText}>
@@ -93,7 +118,7 @@ export default function AiImportDialog({ onImported, onClose }: Props) {
           </div>
 
           <div className={styles.step}>
-            <span className={styles.num}>3</span>
+            <span className={styles.num}>4</span>
             <div className={styles.stepBody}>
               <div className={styles.stepTitle}>Paste the answer back here</div>
               <p className={styles.stepText}>
@@ -106,7 +131,11 @@ export default function AiImportDialog({ onImported, onClose }: Props) {
                   setJson(e.target.value);
                   setError(null);
                 }}
-                placeholder={'{\n  "name": "…",\n  "tasks": [ … ]\n}'}
+                placeholder={
+                  kind === "doc"
+                    ? '{\n  "itemKind": "doc",\n  "name": "…",\n  "body": "…"\n}'
+                    : '{\n  "name": "…",\n  "sections": [ … ]\n}'
+                }
               />
               {error && <p className={styles.error}>{error}</p>}
             </div>
@@ -122,7 +151,7 @@ export default function AiImportDialog({ onImported, onClose }: Props) {
             onClick={handleImport}
             disabled={!json.trim() || busy}
           >
-            {busy ? "Importing…" : "Create checklist"}
+            {busy ? "Importing…" : kind === "doc" ? "Create doc" : "Create checklist"}
           </button>
         </div>
       </div>

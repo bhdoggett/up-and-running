@@ -7,6 +7,7 @@ export function seedState(): AppState {
   const checklistId = newId();
   return {
     active: { kind: "checklist", id: checklistId },
+    files: [],
     docs: [
       {
         id: newId(),

@@ -25,12 +25,13 @@ export async function loadState(): Promise<AppState> {
     // fields, so older state stays valid.
     const checklists = saved.checklists.map(withSections);
     const docs = Array.isArray(saved.docs) ? saved.docs : [];
+    const files = Array.isArray(saved.files) ? saved.files : [];
     const active =
       saved.active ??
       (saved.activeChecklistId
         ? { kind: "checklist" as const, id: saved.activeChecklistId }
         : null);
-    return { checklists, docs, active };
+    return { checklists, docs, files, active };
   }
   // First run: seed with an example and persist it.
   const initial = seedState();

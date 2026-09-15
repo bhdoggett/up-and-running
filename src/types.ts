@@ -106,6 +106,8 @@ export interface Selection {
 export interface AppState {
   checklists: Checklist[];
   docs: Doc[];
+  /** Loose files kept in the library, not tied to any checklist or doc. */
+  files: Resource[];
   active: Selection | null;
   /** Pre-docs format; migrated into `active` on load. */
   activeChecklistId?: string | null;

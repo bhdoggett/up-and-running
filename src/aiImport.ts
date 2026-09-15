@@ -89,16 +89,79 @@ Paste your checklist below this line, then send.
 ------------------------------------------------------------
 `;
 
-/** Copy the prompt to the clipboard. Returns false if the browser blocks it. */
-export async function copyPromptToClipboard(): Promise<boolean> {
+// The doc equivalent: keep the source document's structure, but as Markdown.
+export const DOC_CONVERSION_PROMPT = `You convert reference documents into the "Up and Running" doc format.
+
+I will give you the contents of a document — a Word file, a PDF, a printout, or
+notes. It explains how something works; it is NOT a step-by-step checklist.
+Convert it into a single JSON object matching the schema below.
+
+## Output rules
+
+- Reply with ONLY the JSON object. No commentary before or after, no code fence.
+- Every field must be present, even when empty.
+- Keep ALL of the original wording. Do not summarize, shorten, or rewrite
+  sentences. This is a formatting job, not an editing job.
+
+## Schema
+
+{
+  "itemKind": "doc",
+  "name": "string — the document's title",
+  "body": "string — the whole document as Markdown",
+  "resources": [
+    {
+      "label": "string — short human-readable name",
+      "kind": "web" | "file",
+      "target": "string — a full https:// URL for kind=web, or an absolute file path for kind=file"
+    }
+  ]
+}
+
+## How to map the source to Markdown
+
+Mirror the original layout as closely as Markdown allows:
+
+- Headings and sub-headings become "#", "##", "###" — match the source's own
+  heading levels and order.
+- Bulleted lists become "-". Indent two spaces per level to keep sub-bullets
+  nested exactly as they appear.
+- Numbered lists become "1.", "2.", … Keep the original numbering style.
+- **Bold** and *italic* emphasis is preserved where the source uses it.
+- Tables become Markdown tables (| col | col |) with a header separator row.
+- Callouts, notes, and warnings become "> " blockquotes.
+- Page breaks, headers/footers, and page numbers are dropped — they're artifacts
+  of the page, not content.
+- If the source has images or diagrams, insert a placeholder on its own line:
+  ![description of the diagram](REPLACE_WITH_IMAGE_PATH)
+  Describe what the diagram shows in the alt text so it can be matched up later.
+- Any URL in the text becomes a "web" resource AND stays as a [link](url) inline
+  if it was inline in the source.
+
+## Example output
+
+{
+  "itemKind": "doc",
+  "name": "How the sound system is wired",
+  "body": "## Signal path\\n\\n- **Stage boxes** run to the snake\\n- The snake terminates at the **booth patch panel**\\n  - Channels 1-8 are stage left\\n  - Channels 9-16 are stage right\\n\\n> Channel 7 uses a different battery than the lapel packs.\\n",
+  "resources": []
+}
+
+## The document to convert
+
+Paste your document below this line, then send.
+------------------------------------------------------------
+`;
+
+async function copyText(text: string): Promise<boolean> {
   try {
-    await navigator.clipboard.writeText(CONVERSION_PROMPT);
+    await navigator.clipboard.writeText(text);
     return true;
   } catch {
     // Fallback for contexts where the async clipboard API is unavailable.
     try {
       const ta = document.createElement("textarea");
-      ta.value = CONVERSION_PROMPT;
+      ta.value = text;
       ta.style.position = "fixed";
       ta.style.opacity = "0";
       document.body.appendChild(ta);
@@ -112,14 +175,27 @@ export async function copyPromptToClipboard(): Promise<boolean> {
   }
 }
 
-/** Save the prompt as a text file. Returns the path, or null if cancelled. */
-export async function downloadPrompt(): Promise<string | null> {
+export type PromptKind = "checklist" | "doc";
+
+function promptFor(kind: PromptKind): string {
+  return kind === "doc" ? DOC_CONVERSION_PROMPT : CONVERSION_PROMPT;
+}
+
+/** Copy a conversion prompt. Returns false if the clipboard is unavailable. */
+export function copyPromptToClipboard(kind: PromptKind = "checklist") {
+  return copyText(promptFor(kind));
+}
+
+/** Save a conversion prompt as a text file. Returns the path, or null if cancelled. */
+export async function downloadPrompt(
+  kind: PromptKind = "checklist",
+): Promise<string | null> {
   const path = await save({
     title: "Save conversion prompt",
-    defaultPath: "up-and-running-conversion-prompt.txt",
+    defaultPath: `up-and-running-${kind}-prompt.txt`,
     filters: [{ name: "Text", extensions: ["txt", "md"] }],
   });
   if (!path) return null;
-  await writeTextFile(path, CONVERSION_PROMPT);
+  await writeTextFile(path, promptFor(kind));
   return path;
 }
