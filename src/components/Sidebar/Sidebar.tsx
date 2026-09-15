@@ -11,6 +11,8 @@ interface Props {
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onImport: () => void;
+  /** Current width in px (set by the draggable divider in App). */
+  width: number;
 }
 
 function progressLabel(c: Checklist): string {
@@ -27,6 +29,7 @@ export default function Sidebar({
   onRename,
   onDelete,
   onImport,
+  width,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -55,7 +58,7 @@ export default function Sidebar({
   }
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={styles.sidebar} style={{ width }}>
       <div className={styles.brand}>
         <div className={styles.brandName}>Up and Running</div>
         <div className={styles.brandSub}>Event setup guides</div>

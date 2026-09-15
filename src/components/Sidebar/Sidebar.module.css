@@ -1,4 +1,5 @@
 .sidebar {
+  /* Width is set inline by App (draggable divider); this is the fallback. */
   width: 260px;
   flex: none;
   background: var(--surface);

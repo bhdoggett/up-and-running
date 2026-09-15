@@ -4,6 +4,32 @@
   overflow: hidden;
 }
 
+/* Thin drag handle between the sidebar and the main pane. */
+.resizer {
+  position: relative;
+  flex: none;
+  width: 5px;
+  margin-left: -5px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 5;
+}
+/* Wide grab area, but only a hairline lights up on hover. */
+.resizer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 1px;
+  background: transparent;
+  transition: background 0.12s ease;
+}
+.resizer:hover::after,
+.resizer:active::after {
+  background: var(--accent);
+}
+
 .loading {
   display: grid;
   place-items: center;
