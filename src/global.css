@@ -54,6 +54,12 @@ button {
   cursor: pointer;
 }
 
+/* Inline SVGs sit on the text baseline, which leaves descender space under the
+   glyph and knocks icons off-centre inside buttons. Block-level removes it. */
+button > svg {
+  display: block;
+}
+
 input,
 textarea {
   font: inherit;
