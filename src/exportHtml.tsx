@@ -1,0 +1,221 @@
+import { save, confirm } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { renderToStaticMarkup } from "react-dom/server";
+import type { Checklist } from "./types";
+import MarkdownView from "./components/MarkdownView/MarkdownView";
+import {
+  preparePortable,
+  localAttachments,
+  totalAttachmentBytes,
+  formatBytes,
+} from "./exportShared";
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function safeName(name: string): string {
+  return name.trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "checklist";
+}
+
+// Render one task's Markdown to a static HTML string. Images are already inline
+// data URIs (see embedLocalImages); links become normal target=_blank anchors.
+function renderDetails(details: string): string {
+  if (!details.trim()) return "";
+  const inner = renderToStaticMarkup(<MarkdownView content={details} />);
+  return `<div class="export-prose">${inner}</div>`;
+}
+
+function renderTasks(checklist: Checklist): string {
+  return checklist.tasks
+    .map((task) => {
+      const resources = task.resources
+        .map((r) => {
+          if (r.kind === "web") {
+            return `<li><a href="${escapeHtml(r.target)}" target="_blank" rel="noopener noreferrer">${escapeHtml(r.label)}</a></li>`;
+          }
+          if (r.data) {
+            // Bundled attachment — downloadable straight from this file.
+            return `<li><a href="${r.data}" download="${escapeHtml(r.label)}">${escapeHtml(r.label)}</a> <span class="file-note">(attached file)</span></li>`;
+          }
+          return `<li><span class="file-res">${escapeHtml(r.label)}</span> <span class="file-note">(local file — opens in the desktop app only)</span></li>`;
+        })
+        .join("");
+      const resourcesBlock = resources
+        ? `<ul class="resources">${resources}</ul>`
+        : "";
+      return `
+      <li class="task" data-id="${escapeHtml(task.id)}">
+        <label class="task-head">
+          <input type="checkbox" class="task-check">
+          <span class="task-title">${escapeHtml(task.title)}</span>
+        </label>
+        ${renderDetails(task.details)}
+        ${resourcesBlock}
+      </li>`;
+    })
+    .join("");
+}
+
+// Build a single self-contained HTML document. It renders the checklist read-only
+// (interactive checkboxes saved in the viewer's browser) AND embeds the full
+// checklist JSON in a <script> tag so the desktop app can re-import it.
+export function renderChecklistHtml(checklist: Checklist): string {
+  const storageKey = `up-and-running:${checklist.id}`;
+  // Embed the data payload for round-tripping. Escape "<" so "</script>" in any
+  // user text can't close the tag early; JSON.parse decodes < back to "<".
+  const payload = JSON.stringify(checklist).replace(/</g, "\\u003c");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(checklist.name)}</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1rem;
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #f6f7f9; color: #1c1f23;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; }
+  header { margin-bottom: 1.5rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  .sub { color: #6b7280; font-size: .9rem; }
+  ol.tasks { list-style: none; margin: 0; padding: 0; }
+  .task { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: .75rem; }
+  .task-head { display: flex; align-items: flex-start; gap: .7rem; cursor: pointer; font-weight: 600; }
+  .task-check { width: 1.15rem; height: 1.15rem; margin-top: .18rem; flex: none; accent-color: #2563eb; cursor: pointer; }
+  .task.done .task-title { text-decoration: line-through; color: #9ca3af; }
+  ul.resources { margin: .6rem 0 0 1.85rem; padding-left: 1rem; }
+  ul.resources li { margin: .2rem 0; }
+  a { color: #2563eb; }
+  .file-res { font-weight: 500; }
+  .file-note { color: #9ca3af; font-size: .82rem; }
+  .reset { margin-top: 1.5rem; background: none; border: 1px solid #d1d5db; border-radius: 8px; padding: .4rem .8rem; color: #6b7280; cursor: pointer; font: inherit; font-size: .85rem; }
+  /* Markdown prose */
+  .export-prose { margin: .6rem 0 0 1.85rem; color: #374151; }
+  .export-prose > :first-child { margin-top: 0; }
+  .export-prose h1, .export-prose h2, .export-prose h3 { color: #1c1f23; line-height: 1.3; margin: 1rem 0 .4rem; }
+  .export-prose h1 { font-size: 1.2rem; } .export-prose h2 { font-size: 1.08rem; } .export-prose h3 { font-size: 1rem; }
+  .export-prose p { margin: .5rem 0; }
+  .export-prose ul, .export-prose ol { margin: .5rem 0; padding-left: 1.4rem; }
+  .export-prose li { margin: .2rem 0; }
+  .export-prose ul { list-style-type: disc; }
+  .export-prose ul ul { list-style-type: circle; }
+  .export-prose ul ul ul { list-style-type: square; }
+  .export-prose ul ul ul ul { list-style-type: disc; }
+  .export-prose li > ul, .export-prose li > ol { margin: .2rem 0; }
+  .export-prose img { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: .6rem 0; }
+  .export-prose code { background: #eef0f3; border-radius: 4px; padding: .05rem .3rem; font-size: .88em; }
+  .export-prose pre { background: #eef0f3; border-radius: 8px; padding: .7rem .85rem; overflow-x: auto; }
+  .export-prose pre code { background: none; padding: 0; }
+  .export-prose blockquote { margin: .6rem 0; padding: .2rem 0 .2rem .9rem; border-left: 3px solid #d3d6dc; color: #6b7280; }
+  .export-prose table { border-collapse: collapse; margin: .6rem 0; }
+  .export-prose th, .export-prose td { border: 1px solid #e5e7eb; padding: .35rem .6rem; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #16181c; color: #e7e9ea; }
+    .task { background: #1f2226; border-color: #33373d; }
+    .sub, .file-note { color: #8b929c; }
+    .export-prose { color: #c3c7cd; }
+    .export-prose h1, .export-prose h2, .export-prose h3 { color: #e7e9ea; }
+    .export-prose code, .export-prose pre { background: #2a2e34; }
+    .reset { border-color: #3a3f46; color: #9aa0a8; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>${escapeHtml(checklist.name)}</h1>
+      <div class="sub">${checklist.tasks.length} step${checklist.tasks.length === 1 ? "" : "s"} · progress is saved in this browser</div>
+    </header>
+    <ol class="tasks">${renderTasks(checklist)}
+    </ol>
+    <button class="reset" type="button">Reset all checkboxes</button>
+  </div>
+  <script type="application/json" id="uar-data">${payload}</script>
+<script>
+(function () {
+  var KEY = ${JSON.stringify(storageKey)};
+  function loadDone() { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return {}; } }
+  function saveDone(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
+  var done = loadDone();
+  var tasks = document.querySelectorAll(".task");
+  tasks.forEach(function (li) {
+    var id = li.getAttribute("data-id");
+    var box = li.querySelector(".task-check");
+    if (done[id]) { box.checked = true; li.classList.add("done"); }
+    box.addEventListener("change", function () {
+      done[id] = box.checked; li.classList.toggle("done", box.checked); saveDone(done);
+    });
+  });
+  document.querySelector(".reset").addEventListener("click", function () {
+    done = {}; saveDone(done);
+    tasks.forEach(function (li) { li.querySelector(".task-check").checked = false; li.classList.remove("done"); });
+  });
+})();
+</script>
+</body>
+</html>`;
+}
+
+// If the checklist has local file attachments, ask whether to bundle them
+// (showing the total size). Returns the user's choice; no prompt when there are none.
+async function askIncludeAttachments(checklist: Checklist): Promise<boolean> {
+  const attachments = localAttachments(checklist);
+  if (attachments.length === 0) return false;
+  const bytes = await totalAttachmentBytes(checklist);
+  return confirm(
+    `This checklist has ${attachments.length} file attachment${attachments.length === 1 ? "" : "s"} totaling ${formatBytes(bytes)}.\n\n` +
+      `Include them in the export? They'll travel with the file so it works on any computer, but the file will be larger. ` +
+      `Choose “Skip” to keep the file small (attachments stay as references only).`,
+    {
+      title: "Include attachments?",
+      kind: "info",
+      okLabel: "Include",
+      cancelLabel: "Skip",
+    },
+  );
+}
+
+// Prompt for a location and write the standalone HTML file. Returns the path, or
+// null if cancelled.
+export async function exportChecklistToHtml(
+  checklist: Checklist,
+): Promise<string | null> {
+  const includeAttachments = await askIncludeAttachments(checklist);
+  const path = await save({
+    title: "Export checklist as HTML",
+    defaultPath: `${safeName(checklist.name)}.html`,
+    filters: [{ name: "HTML", extensions: ["html"] }],
+  });
+  if (!path) return null;
+  const portable = await preparePortable(checklist, includeAttachments);
+  await writeTextFile(path, renderChecklistHtml(portable));
+  return path;
+}
+
+// Export the editable checklist as a .uar file (JSON) for importing into another
+// copy of the app. Images are inlined so it's portable across machines.
+export async function exportChecklistToUar(
+  checklist: Checklist,
+): Promise<string | null> {
+  const includeAttachments = await askIncludeAttachments(checklist);
+  const path = await save({
+    title: "Export checklist file",
+    defaultPath: `${safeName(checklist.name)}.uar`,
+    filters: [{ name: "Up and Running checklist", extensions: ["uar"] }],
+  });
+  if (!path) return null;
+  const portable = await preparePortable(checklist, includeAttachments);
+  await writeTextFile(path, JSON.stringify(portable, null, 2));
+  return path;
+}

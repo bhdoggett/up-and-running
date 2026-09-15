@@ -1,0 +1,140 @@
+.sidebar {
+  width: 260px;
+  flex: none;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.brand {
+  padding: 1.1rem 1.1rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+.brandName {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(100deg, #aeb8ff, #7c8cff 55%, #34d399);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  width: fit-content;
+}
+.brandSub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1rem 0.4rem;
+}
+.listLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+.headBtns {
+  display: flex;
+  gap: 0.3rem;
+}
+.addBtn {
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  line-height: 0;
+}
+.addBtn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0.2rem 0.6rem;
+  overflow-y: auto;
+  flex: 1;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: var(--radius-sm);
+  padding: 0.1rem;
+}
+.row:hover {
+  background: var(--bg);
+}
+.row.active {
+  background: var(--accent-soft);
+}
+.itemBtn {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.5rem 0.55rem;
+  color: var(--text);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.row.active .itemBtn {
+  color: var(--accent-hover);
+  font-weight: 600;
+}
+.progress {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  padding-right: 0.3rem;
+  flex: none;
+}
+.rowDelete {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  padding: 0.3rem;
+  line-height: 0;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+}
+.row:hover .rowDelete {
+  opacity: 1;
+}
+.rowDelete:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.nameInput {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.5rem;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
+
+.empty {
+  padding: 1rem;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  text-align: center;
+}
