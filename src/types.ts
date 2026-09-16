@@ -48,6 +48,8 @@ export interface Section {
 export interface Checklist {
   id: string;
   name: string;
+  /** Optional Markdown intro shown above the steps; hidden when empty. */
+  description: string;
   /** Links/files that apply to the whole checklist (e.g. an overview video). */
   resources: Resource[];
   sections: Section[];
@@ -131,6 +133,7 @@ export function withSections(c: Checklist): Checklist {
   return {
     id: c.id,
     name: c.name,
+    description: typeof c.description === "string" ? c.description : "",
     resources: Array.isArray(c.resources) ? c.resources : [],
     sections,
   };

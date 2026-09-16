@@ -100,6 +100,7 @@ export default function App() {
     const checklist: Checklist = {
       id: newId(),
       name: "New checklist",
+      description: "",
       resources: [],
       sections: [{ id: newId(), name: "", collapsed: false, tasks: [] }],
     };

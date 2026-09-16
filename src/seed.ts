@@ -38,6 +38,8 @@ just here so you know what you're looking at.
       {
         id: checklistId,
         name: "Sunday Service Setup",
+        description:
+          "Everything that needs doing **before 9:00am**. Work top to bottom — the sound board needs a few minutes to boot, so start that early.",
         resources: [
           {
             id: newId(),

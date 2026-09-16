@@ -227,6 +227,7 @@ export function renderChecklistHtml(checklist: Checklist): string {
       <h1>${escapeHtml(checklist.name)}</h1>
       <div class="sub">${stepCount} step${stepCount === 1 ? "" : "s"} · progress is saved in this browser</div>
     </header>
+    ${checklist.description.trim() ? `<div class="overview">${renderDetails(checklist.description)}</div>` : ""}
     ${checklist.resources.length > 0 ? `<div class="overview"><div class="overview-label">Overview links &amp; files</div>${renderResources(checklist.resources)}</div>` : ""}
     ${renderSections(checklist)}
     <button class="reset" type="button">Reset all checkboxes</button>

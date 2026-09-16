@@ -46,6 +46,22 @@
   border-color: var(--accent);
 }
 
+/* Insertion indicator: the step would land above this one. */
+.item.dropLine {
+  position: relative;
+}
+.item.dropLine::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -5px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
 .check {
   width: 1.25rem;
   height: 1.25rem;

@@ -154,6 +154,61 @@
   background: var(--accent-soft);
 }
 
+/* Optional intro above the steps. */
+.description {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 2.2rem 0.85rem 1.05rem;
+  margin-bottom: 1.3rem;
+}
+.descEditBtn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.35rem;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.description:hover .descEditBtn {
+  opacity: 1;
+}
+.descEditBtn:hover {
+  color: var(--accent);
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+.descEdit {
+  margin-bottom: 1.3rem;
+}
+.descActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.45rem;
+}
+.addDesc {
+  margin-top: 0.55rem;
+  background: none;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.55rem;
+  color: var(--text-faint);
+  font-size: 0.82rem;
+}
+.addDesc:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  border-style: solid;
+}
+
 .list {
   list-style: none;
   margin: 0;

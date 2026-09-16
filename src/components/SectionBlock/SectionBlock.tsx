@@ -3,7 +3,7 @@ import { confirm } from "@tauri-apps/plugin-dialog";
 import type { Section, Task } from "../../types";
 import { newId } from "../../types";
 import TaskItem from "../TaskItem/TaskItem";
-import { acceptDrop, type Drag } from "../../dragState";
+import { acceptDrop, type Drag, type DropTarget } from "../../dragState";
 import styles from "./SectionBlock.module.css";
 
 interface Props {
@@ -14,6 +14,8 @@ interface Props {
   onDelete: () => void;
   drag: Drag;
   setDrag: (d: Drag) => void;
+  dropTarget: DropTarget;
+  setDropTarget: (t: DropTarget) => void;
   onMoveTask: (
     taskId: string,
     fromSectionId: string,
@@ -30,6 +32,8 @@ export default function SectionBlock({
   onDelete,
   drag,
   setDrag,
+  dropTarget,
+  setDropTarget,
   onMoveTask,
   onMoveSection,
 }: Props) {
@@ -93,15 +97,26 @@ export default function SectionBlock({
         onMoveSection(drag.sectionId, section.id);
       }
       setDrag(null);
+      setDropTarget(null);
     };
   }
 
+  const sectionLine =
+    dropTarget?.type === "section" && dropTarget.beforeSectionId === section.id;
+  const endLine =
+    dropTarget?.type === "task" &&
+    dropTarget.sectionId === section.id &&
+    dropTarget.beforeTaskId === null;
+
   return (
     <section
-      className={`${styles.section} ${draggingThisSection ? styles.dragging : ""}`}
+      className={`${styles.section} ${draggingThisSection ? styles.dragging : ""} ${sectionLine ? styles.sectionLine : ""}`}
       onDragOver={(e) => {
-        // Let a task dropped anywhere in this section land at the end.
-        if (drag) acceptDrop(e);
+        // Anywhere in this section that isn't a step means "put it at the end".
+        if (drag?.type === "task") {
+          acceptDrop(e);
+          setDropTarget({ type: "task", sectionId: section.id, beforeTaskId: null });
+        }
       }}
       onDrop={dropOnTask(null)}
     >
@@ -109,7 +124,10 @@ export default function SectionBlock({
         <div
           className={styles.head}
           onDragOver={(e) => {
-            if (drag?.type === "section") acceptDrop(e);
+            if (drag?.type === "section") {
+              acceptDrop(e);
+              setDropTarget({ type: "section", beforeSectionId: section.id });
+            }
           }}
           onDrop={(e) => {
             if (drag?.type === "section") {
@@ -117,6 +135,7 @@ export default function SectionBlock({
               e.stopPropagation();
               onMoveSection(drag.sectionId, section.id);
               setDrag(null);
+              setDropTarget(null);
             }
           }}
         >
@@ -142,7 +161,10 @@ export default function SectionBlock({
                   e.dataTransfer.setData("text/plain", section.id);
                   setDrag({ type: "section", sectionId: section.id });
                 }}
-                onDragEnd={() => setDrag(null)}
+                onDragEnd={() => {
+                  setDrag(null);
+                  setDropTarget(null);
+                }}
                 title="Drag to reorder section"
                 aria-label="Drag to reorder section"
               >
@@ -212,12 +234,26 @@ export default function SectionBlock({
                   task={task}
                   autoEdit={task.id === justAddedId}
                   dragging={drag?.type === "task" && drag.taskId === task.id}
+                  dropLine={
+                    dropTarget?.type === "task" &&
+                    dropTarget.sectionId === section.id &&
+                    dropTarget.beforeTaskId === task.id
+                  }
                   onDragStart={() =>
                     setDrag({ type: "task", taskId: task.id, fromSectionId: section.id })
                   }
-                  onDragEnd={() => setDrag(null)}
+                  onDragEnd={() => {
+                    setDrag(null);
+                    setDropTarget(null);
+                  }}
                   onDragOver={(e) => {
-                    if (drag?.type === "task") acceptDrop(e);
+                    if (drag?.type !== "task") return;
+                    acceptDrop(e);
+                    setDropTarget({
+                      type: "task",
+                      sectionId: section.id,
+                      beforeTaskId: task.id,
+                    });
                   }}
                   onDrop={dropOnTask(task.id)}
                   onToggleDone={() =>
@@ -239,6 +275,9 @@ export default function SectionBlock({
               ))}
             </ul>
           )}
+
+          {/* Insertion line for "drop at the end of this section". */}
+          {endLine && <div className={styles.endLine} />}
 
           <div className={styles.addTask}>
             <input

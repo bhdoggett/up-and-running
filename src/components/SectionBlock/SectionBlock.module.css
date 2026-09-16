@@ -35,6 +35,31 @@
   opacity: 0.45;
 }
 
+/* The dragged section would land above this one. */
+.section.sectionLine {
+  position: relative;
+}
+.section.sectionLine::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* The dragged step would land at the end of this section. */
+.endLine {
+  height: 2px;
+  border-radius: 2px;
+  margin: 0.45rem 0 0;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
 .toggle {
   display: flex;
   align-items: center;

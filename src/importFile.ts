@@ -80,6 +80,7 @@ export async function buildImportedChecklist(raw: unknown): Promise<Checklist> {
   return {
     id: newId(),
     name: checklist.name,
+    description: checklist.description ?? "",
     resources: await Promise.all(
       checklist.resources.map((r) => restoreResource(r, dir)),
     ),

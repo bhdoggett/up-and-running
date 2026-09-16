@@ -3,9 +3,12 @@ import type { Checklist, Section } from "../../types";
 import { newId, allTasks } from "../../types";
 import { exportChecklistToHtml, exportChecklistToUar } from "../../exportHtml";
 import { useNameMap } from "../../library";
-import type { Drag } from "../../dragState";
+import type { Drag, DropTarget } from "../../dragState";
 import SectionBlock from "../SectionBlock/SectionBlock";
 import ResourceList from "../ResourceList/ResourceList";
+import MarkdownView from "../MarkdownView/MarkdownView";
+import MarkdownEditor from "../MarkdownEditor/MarkdownEditor";
+import { resolveAppImage, openLink } from "../../appLinks";
 import styles from "./ChecklistView.module.css";
 
 interface Props {
@@ -18,7 +21,11 @@ export default function ChecklistView({ checklist, onChange }: Props) {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [drag, setDrag] = useState<Drag>(null);
+  const [dropTarget, setDropTarget] = useState<DropTarget>(null);
+  const [editingDesc, setEditingDesc] = useState(false);
   const names = useNameMap();
+
+  const hasDescription = checklist.description.trim() !== "";
 
   const tasks = allTasks(checklist);
   const done = tasks.filter((t) => t.done).length;
@@ -183,6 +190,16 @@ export default function ChecklistView({ checklist, onChange }: Props) {
               resources={checklist.resources}
               onChange={(resources) => onChange({ ...checklist, resources })}
             />
+            {/* The description only takes up space once it has content. */}
+            {!hasDescription && !editingDesc && (
+              <button
+                className={styles.addDesc}
+                onClick={() => setEditingDesc(true)}
+                title="Add an intro or summary"
+              >
+                + Description
+              </button>
+            )}
           </div>
           <div className={styles.exportWrap}>
             <button
@@ -216,6 +233,41 @@ export default function ChecklistView({ checklist, onChange }: Props) {
           </div>
         </div>
 
+        {editingDesc ? (
+          <div className={styles.descEdit}>
+            <MarkdownEditor
+              value={checklist.description}
+              onChange={(description) => onChange({ ...checklist, description })}
+              placeholder="An intro or summary for this checklist… (Markdown supported)"
+            />
+            <div className={styles.descActions}>
+              <button className={styles.ghostBtn} onClick={() => setEditingDesc(false)}>
+                Done
+              </button>
+            </div>
+          </div>
+        ) : (
+          hasDescription && (
+            <div className={styles.description}>
+              <MarkdownView
+                content={checklist.description}
+                resolveImage={resolveAppImage}
+                onLinkClick={openLink}
+              />
+              <button
+                className={styles.descEditBtn}
+                onClick={() => setEditingDesc(true)}
+                title="Edit description"
+                aria-label="Edit description"
+              >
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                  <path d="M11.5 2.5l2 2L6 12l-2.5.5L4 10l7.5-7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+          )
+        )}
+
         {checklist.sections.map((section) => (
           <SectionBlock
             key={section.id}
@@ -225,6 +277,8 @@ export default function ChecklistView({ checklist, onChange }: Props) {
             onDelete={() => deleteSection(section.id)}
             drag={drag}
             setDrag={setDrag}
+            dropTarget={dropTarget}
+            setDropTarget={setDropTarget}
             onMoveTask={moveTask}
             onMoveSection={moveSection}
           />

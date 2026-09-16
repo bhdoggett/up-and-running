@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Resource, Task } from "../../types";
 import MarkdownView from "../MarkdownView/MarkdownView";
 import MarkdownEditor from "../MarkdownEditor/MarkdownEditor";
@@ -15,6 +15,8 @@ interface Props {
   /** Start in edit mode (used for freshly-added steps). */
   autoEdit?: boolean;
   dragging?: boolean;
+  /** Draw an insertion line above this step. */
+  dropLine?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onDragOver?: (e: React.DragEvent) => void;
@@ -28,12 +30,15 @@ export default function TaskItem({
   onDelete,
   autoEdit = false,
   dragging = false,
+  dropLine = false,
   onDragStart,
   onDragEnd,
   onDragOver,
   onDrop,
 }: Props) {
-  const [handleHeld, setHandleHeld] = useState(false);
+  // A ref, not state: the browser reads `draggable` when the gesture begins, so
+  // a re-render triggered by mousedown can land too late to allow the drag.
+  const fromGrip = useRef(false);
   const [expanded, setExpanded] = useState(autoEdit);
   const [editing, setEditing] = useState(autoEdit);
   const { navigate } = useLibrary();
@@ -55,12 +60,20 @@ export default function TaskItem({
 
   return (
     <li
-      className={`${styles.item} ${task.done ? styles.done : ""} ${dragging ? styles.dragging : ""}`}
-      // Only the grip starts a drag, so text selection inside the card still works.
-      draggable={handleHeld}
-      onDragStart={() => onDragStart?.()}
+      className={`${styles.item} ${task.done ? styles.done : ""} ${dragging ? styles.dragging : ""} ${dropLine ? styles.dropLine : ""}`}
+      draggable
+      // Only a drag begun on the grip counts, so selecting text still works.
+      onDragStart={(e) => {
+        if (!fromGrip.current) {
+          e.preventDefault();
+          return;
+        }
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", task.id);
+        onDragStart?.();
+      }}
       onDragEnd={() => {
-        setHandleHeld(false);
+        fromGrip.current = false;
         onDragEnd?.();
       }}
       onDragOver={onDragOver}
@@ -69,8 +82,12 @@ export default function TaskItem({
       <div className={styles.head}>
         <span
           className={styles.grip}
-          onMouseDown={() => setHandleHeld(true)}
-          onMouseUp={() => setHandleHeld(false)}
+          onMouseDown={() => {
+            fromGrip.current = true;
+          }}
+          onMouseUp={() => {
+            fromGrip.current = false;
+          }}
           title="Drag to reorder step"
           aria-label="Drag to reorder step"
         >

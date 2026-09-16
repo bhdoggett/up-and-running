@@ -6,6 +6,12 @@ export type Drag =
   | { type: "section"; sectionId: string }
   | null;
 
+/** Where the item would land, so the UI can draw an insertion line. */
+export type DropTarget =
+  | { type: "task"; sectionId: string; beforeTaskId: string | null }
+  | { type: "section"; beforeSectionId: string }
+  | null;
+
 /** Mark the event as a move so the cursor shows the right affordance. */
 export function acceptDrop(e: React.DragEvent) {
   e.preventDefault();
