@@ -231,34 +231,34 @@ export default function SectionBlock({
                 title={allDone ? "Uncheck every step here" : "Check every step here"}
                 aria-label={`Mark all steps in ${section.name || "this section"}`}
               />
-              <button
-                className={styles.toggle}
-                onClick={() => onChange({ ...section, collapsed: !section.collapsed })}
-                aria-expanded={!section.collapsed}
-                title={section.collapsed ? "Expand section" : "Collapse section"}
-              >
-                <span className={styles.name}>{section.name}</span>
-                <svg
-                  className={`${styles.chevron} ${section.collapsed ? "" : styles.open}`}
-                  width="11"
-                  height="11"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  aria-hidden="true"
+              {/* The name is the rename control; only the arrow collapses. */}
+              <div className={styles.titleGroup}>
+                <button
+                  className={styles.nameBtn}
+                  onClick={startRename}
+                  title="Click to rename"
                 >
-                  <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <button
-                className={styles.iconBtn}
-                onClick={startRename}
-                title="Rename section"
-                aria-label="Rename section"
-              >
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                  <path d="M11.5 2.5l2 2L6 12l-2.5.5L4 10l7.5-7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-                </svg>
-              </button>
+                  <span className={styles.name}>{section.name}</span>
+                </button>
+                <button
+                  className={styles.chevronBtn}
+                  onClick={() => onChange({ ...section, collapsed: !section.collapsed })}
+                  aria-expanded={!section.collapsed}
+                  title={section.collapsed ? "Expand section" : "Collapse section"}
+                  aria-label={section.collapsed ? "Expand section" : "Collapse section"}
+                >
+                  <svg
+                    className={`${styles.chevron} ${section.collapsed ? "" : styles.open}`}
+                    width="11"
+                    height="11"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </div>
               <button
                 className={`${styles.iconBtn} ${styles.danger}`}
                 onClick={requestDelete}

@@ -122,17 +122,38 @@
   cursor: default;
 }
 
-.toggle {
+/* Name and arrow are separate controls: clicking the name renames, the arrow
+   collapses. */
+.titleGroup {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.15rem;
   flex: 1;
+  min-width: 0;
+}
+.nameBtn {
   min-width: 0;
   background: none;
   border: none;
-  padding: 0;
-  color: var(--text);
+  padding: 0.1rem 0.2rem 0.1rem 0;
+  color: var(--paper);
   text-align: left;
+}
+.nameBtn:hover .name {
+  color: var(--accent);
+}
+.chevronBtn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0.25rem 0.3rem;
+  color: var(--faint);
+}
+.chevronBtn:hover {
+  color: var(--accent);
 }
 .chevron {
   flex: none;
@@ -155,10 +176,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.toggle:hover .name,
-.toggle:hover .chevron {
-  color: var(--accent);
 }
 .count {
   flex: none;
