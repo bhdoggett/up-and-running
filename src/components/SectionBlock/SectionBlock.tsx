@@ -186,19 +186,7 @@ export default function SectionBlock({
             setDropTarget(null);
           }}
         >
-          {editingName ? (
-            <input
-              className={styles.nameInput}
-              value={nameDraft}
-              autoFocus
-              onChange={(e) => setNameDraft(e.target.value)}
-              onBlur={commitRename}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commitRename();
-                if (e.key === "Escape") setEditingName(false);
-              }}
-            />
-          ) : (
+          {
             <>
               <span
                 className={styles.grip}
@@ -231,15 +219,30 @@ export default function SectionBlock({
                 title={allDone ? "Uncheck every step here" : "Check every step here"}
                 aria-label={`Mark all steps in ${section.name || "this section"}`}
               />
-              {/* The name is the rename control; only the arrow collapses. */}
+              {/* The name is the rename control; only the arrow collapses. The
+                  field replaces just the name, so the row stays put. */}
               <div className={styles.titleGroup}>
-                <button
-                  className={styles.nameBtn}
-                  onClick={startRename}
-                  title="Click to rename"
-                >
-                  <span className={styles.name}>{section.name}</span>
-                </button>
+                {editingName ? (
+                  <input
+                    className={styles.nameInput}
+                    value={nameDraft}
+                    autoFocus
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    onBlur={commitRename}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitRename();
+                      if (e.key === "Escape") setEditingName(false);
+                    }}
+                  />
+                ) : (
+                  <button
+                    className={styles.nameBtn}
+                    onClick={startRename}
+                    title="Click to rename"
+                  >
+                    <span className={styles.name}>{section.name}</span>
+                  </button>
+                )}
                 <button
                   className={styles.chevronBtn}
                   onClick={() => onChange({ ...section, collapsed: !section.collapsed })}
@@ -276,7 +279,7 @@ export default function SectionBlock({
                 {done}/{total}
               </span>
             </>
-          )}
+          }
         </div>
       )}
 
