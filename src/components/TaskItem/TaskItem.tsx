@@ -47,7 +47,10 @@ export default function TaskItem({
   // A ref, not state: the browser reads `draggable` when the gesture begins, so
   // a re-render triggered by mousedown can land too late to allow the drag.
   const fromGrip = useRef(false);
-  const [expanded, setExpanded] = useState(autoEdit);
+  // A step inside a collapsed section isn't mounted, so "expand all" expands
+  // the section and this step mounts *after* the broadcast. Reading it here
+  // means such a step opens on the same click rather than the next one.
+  const [expanded, setExpanded] = useState(autoEdit || (pulse.count > 0 && pulse.open));
   const [editing, setEditing] = useState(autoEdit);
   const { navigate } = useLibrary();
   const labelFor = useResourceLabel();
