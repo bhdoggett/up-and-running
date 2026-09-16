@@ -164,11 +164,24 @@ export default function ChecklistView({ checklist, onChange }: Props) {
               <span>
                 {done} of {total} done
               </span>
-              {total > 0 && (
-                <span className={styles.bar}>
-                  <span className={styles.barFill} style={{ width: `${pct}%` }} />
-                </span>
-              )}
+              {/* One dash per step, like a cue strip — you can see how many
+                  steps there are, not just how far along you are. Past a point
+                  the dashes would be sub-pixel, so it falls back to a bar. */}
+              {total > 0 &&
+                (total <= 40 ? (
+                  <span className={styles.ticks}>
+                    {tasks.map((t) => (
+                      <span
+                        key={t.id}
+                        className={`${styles.tick} ${t.done ? styles.tickDone : ""}`}
+                      />
+                    ))}
+                  </span>
+                ) : (
+                  <span className={styles.bar}>
+                    <span className={styles.barFill} style={{ width: `${pct}%` }} />
+                  </span>
+                ))}
               {/* Reset for the next time the checklist is run. */}
               {done > 0 && (
                 <button

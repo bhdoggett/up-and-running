@@ -80,6 +80,27 @@
   align-items: center;
   gap: 0.6rem;
 }
+/* A dash per step. Each is its own segment, so the strip reads as a count as
+   well as a proportion. */
+.ticks {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  max-width: 260px;
+  min-width: 0;
+}
+.tick {
+  flex: 1;
+  min-width: 2px;
+  height: 5px;
+  background: var(--rule);
+  transition: background 0.16s ease;
+}
+.tickDone {
+  background: var(--go);
+}
+
 .bar {
   height: 3px;
   flex: 1;
