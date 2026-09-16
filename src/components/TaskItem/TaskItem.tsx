@@ -18,8 +18,6 @@ interface Props {
   number: number;
   /** Broadcast from "collapse all" / "expand all". */
   pulse: ExpandPulse;
-  /** Start in edit mode (used for freshly-added steps). */
-  autoEdit?: boolean;
   dragging?: boolean;
   /** Draw an insertion line above this step. */
   dropLine?: boolean;
@@ -36,7 +34,6 @@ export default function TaskItem({
   onDelete,
   number,
   pulse,
-  autoEdit = false,
   dragging = false,
   dropLine = false,
   onDragStart,
@@ -50,8 +47,8 @@ export default function TaskItem({
   // A step inside a collapsed section isn't mounted, so "expand all" expands
   // the section and this step mounts *after* the broadcast. Reading it here
   // means such a step opens on the same click rather than the next one.
-  const [expanded, setExpanded] = useState(autoEdit || (pulse.count > 0 && pulse.open));
-  const [editing, setEditing] = useState(autoEdit);
+  const [expanded, setExpanded] = useState(pulse.count > 0 && pulse.open);
+  const [editing, setEditing] = useState(false);
   const { navigate } = useLibrary();
   const labelFor = useResourceLabel();
 
@@ -248,7 +245,6 @@ export default function TaskItem({
             <input
               className={styles.input}
               value={task.title}
-              autoFocus={autoEdit}
               onChange={(e) => patch({ title: e.target.value })}
               placeholder="What needs to be done?"
             />

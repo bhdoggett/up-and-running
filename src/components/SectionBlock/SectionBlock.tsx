@@ -49,7 +49,6 @@ export default function SectionBlock({
 }: Props) {
   const listRef = useRef<HTMLUListElement>(null);
   const [newTitle, setNewTitle] = useState("");
-  const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
 
@@ -85,7 +84,6 @@ export default function SectionBlock({
       resources: [],
     };
     setTasks([...section.tasks, task]);
-    setJustAddedId(task.id);
     setNewTitle("");
   }
 
@@ -318,7 +316,6 @@ export default function SectionBlock({
                   task={task}
                   number={startNumber + i}
                   pulse={pulse}
-                  autoEdit={task.id === justAddedId}
                   dragging={drag?.type === "task" && drag.taskId === task.id}
                   dropLine={
                     dropTarget?.type === "task" &&
