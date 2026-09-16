@@ -182,9 +182,19 @@
   justify-content: center;
 }
 .iconBtn:hover {
-  color: var(--text);
-  background: var(--bg);
-  border-color: var(--border);
+  color: var(--paper);
+  background: var(--panel);
+  border-color: var(--rule);
+}
+/* While editing, the same button confirms — show it as active. */
+.iconBtnDone {
+  color: var(--go);
+  opacity: 1;
+}
+.iconBtnDone:hover {
+  color: var(--go);
+  background: rgba(87, 201, 138, 0.12);
+  border-color: transparent;
 }
 .body {
   /* Aligns with the title, clear of the number margin. */
