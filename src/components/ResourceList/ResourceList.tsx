@@ -34,6 +34,8 @@ export default function ResourceList({
   const labelFor = useResourceLabel();
   const [editingRow, setEditingRow] = useState<RowKind | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Collapsed by default so the header stays quiet; the count says what's here.
+  const [open, setOpen] = useState(false);
 
   function update(id: string, changes: Partial<Resource>) {
     onChange(resources.map((r) => (r.id === id ? { ...r, ...changes } : r)));
@@ -209,7 +211,28 @@ export default function ResourceList({
 
   return (
     <div className={styles.wrap}>
-      {ROWS.filter((r) => r.key !== "item" || showLinkedItems).map(renderRow)}
+      <button
+        className={styles.toggle}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <svg
+          className={`${styles.toggleChevron} ${open ? styles.open : ""}`}
+          width="10"
+          height="10"
+          viewBox="0 0 12 12"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Resources ({resources.length})
+      </button>
+      {open && (
+        <div className={styles.rows}>
+          {ROWS.filter((r) => r.key !== "item" || showLinkedItems).map(renderRow)}
+        </div>
+      )}
     </div>
   );
 }

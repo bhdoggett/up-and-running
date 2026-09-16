@@ -463,23 +463,6 @@ export async function exportChecklistToHtml(
   return path;
 }
 
-// Export the editable checklist as a .uar file (JSON) for importing into another
-// copy of the app. Images are inlined so it's portable across machines.
-export async function exportChecklistToUar(
-  checklist: Checklist,
-  names: NameMap = {},
-): Promise<string | null> {
-  const includeAttachments = await askIncludeAttachments(checklist);
-  const path = await save({
-    title: "Export checklist file",
-    defaultPath: `${safeName(checklist.name)}.uar`,
-    filters: [{ name: "Up and Running checklist", extensions: ["uar"] }],
-  });
-  if (!path) return null;
-  const portable = await preparePortable(checklist, includeAttachments);
-  await writeTextFile(
-    path,
-    JSON.stringify(withResolvedLabels(portable, names), null, 2),
-  );
-  return path;
-}
+// A single checklist has no .uar of its own: .uar always means a whole
+// project bundle, so one extension has one meaning. Single items export as
+// HTML (see exportChecklistToHtml / exportDocToHtml).

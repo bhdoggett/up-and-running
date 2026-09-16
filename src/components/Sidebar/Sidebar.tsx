@@ -428,8 +428,8 @@ export default function Sidebar({
                   onImport();
                 }}
               >
-                <strong>From a {menu.kind} file</strong>
-                <span>.uar or exported .html</span>
+                <strong>From an exported page</strong>
+                <span>An .html file exported from this app</span>
               </button>
               <button
                 className={styles.menuItem}
