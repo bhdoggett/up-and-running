@@ -5,10 +5,16 @@ import { newId } from "./types";
 // Fully editable/deletable from the UI.
 export function seedState(): AppState {
   const checklistId = newId();
+  const projectId = newId();
   return {
+    activeProjectId: projectId,
     active: { kind: "checklist", id: checklistId },
-    files: [],
-    docs: [
+    projects: [
+      {
+        id: projectId,
+        name: "Sunday Service",
+        files: [],
+        docs: [
       {
         id: newId(),
         name: "How the sound system is wired",
@@ -101,6 +107,8 @@ just here so you know what you're looking at.
                 resources: [],
               },
             ],
+          },
+        ],
           },
         ],
       },

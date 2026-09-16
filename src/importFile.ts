@@ -1,8 +1,8 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeFile, mkdir } from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
-import type { Checklist, Doc, Resource, Task } from "./types";
-import { newId, withSections } from "./types";
+import type { Checklist, Doc, Project, Resource, Task } from "./types";
+import { newId, withSections, normalizeProject } from "./types";
 
 function bytesFromDataUri(uri: string): Uint8Array {
   const comma = uri.indexOf(",");
@@ -132,16 +132,39 @@ function buildImportedDoc(raw: unknown): Doc {
 
 export type ImportedItem =
   | { kind: "checklist"; checklist: Checklist }
-  | { kind: "doc"; doc: Doc };
+  | { kind: "doc"; doc: Doc }
+  | { kind: "project"; project: Project };
 
-// Let the user pick a .uar or .html file holding either a checklist or a doc.
+function isProjectPayload(raw: unknown): boolean {
+  const r = raw as { itemKind?: string; checklists?: unknown };
+  return !!r && (r.itemKind === "project" || Array.isArray(r.checklists));
+}
+
+// A whole project bundle: fresh ids throughout, progress reset, and any
+// bundled attachments written back to disk.
+async function buildImportedProject(raw: unknown): Promise<Project> {
+  const p = normalizeProject(raw as Partial<Project>);
+  const checklists = await Promise.all(
+    p.checklists.map((c) => buildImportedChecklist(c)),
+  );
+  const docs = p.docs.map((d) => buildImportedDoc(d));
+  const files = p.files.map((f) => ({
+    id: newId(),
+    label: f.label,
+    kind: f.kind,
+    target: f.target,
+  }));
+  return { id: newId(), name: p.name, checklists, docs, files };
+}
+
+// Let the user pick a .uar or .html file holding a project, checklist, or doc.
 // Returns null if they cancel.
-export async function importChecklistFromFile(): Promise<ImportedItem | null> {
+export async function importItemFromFile(): Promise<ImportedItem | null> {
   const selected = await open({
-    title: "Import a checklist or doc",
+    title: "Import a project or checklist",
     multiple: false,
     filters: [
-      { name: "Checklist or doc (.uar or .html)", extensions: ["uar", "html", "htm"] },
+      { name: "Up and Running (.uar or .html)", extensions: ["uar", "html", "htm"] },
     ],
   });
   if (typeof selected !== "string") return null;
@@ -150,6 +173,9 @@ export async function importChecklistFromFile(): Promise<ImportedItem | null> {
   const isHtml = /\.html?$/i.test(selected);
   const raw = isHtml ? extractPayloadFromHtml(text) : JSON.parse(text);
 
+  if (isProjectPayload(raw)) {
+    return { kind: "project", project: await buildImportedProject(raw) };
+  }
   if (isDocPayload(raw)) {
     return { kind: "doc", doc: buildImportedDoc(raw) };
   }

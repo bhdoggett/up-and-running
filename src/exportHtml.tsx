@@ -1,7 +1,7 @@
 import { save, confirm } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { Checklist, Doc, Resource } from "./types";
+import type { Checklist, Doc, Project, Resource } from "./types";
 import { allTasks } from "./types";
 import MarkdownView from "./components/MarkdownView/MarkdownView";
 import {
@@ -11,6 +11,9 @@ import {
   localDocAttachments,
   totalAttachmentBytes,
   totalDocAttachmentBytes,
+  localProjectAttachments,
+  totalProjectAttachmentBytes,
+  prepareProjectPortable,
   formatBytes,
 } from "./exportShared";
 
@@ -369,6 +372,46 @@ export async function exportDocToHtml(
     path,
     renderDocHtml({ ...portable, resources: fillLabels(portable.resources, names) }),
   );
+  return path;
+}
+
+/**
+ * Export a whole project as a .uar bundle: every checklist, doc, and file in
+ * one file, so links between them still resolve when it's imported elsewhere.
+ */
+export async function exportProjectToUar(project: Project): Promise<string | null> {
+  const attachments = localProjectAttachments(project);
+  let includeAttachments = false;
+  if (attachments.length > 0) {
+    includeAttachments = await askBundle(
+      attachments.length,
+      await totalProjectAttachmentBytes(project),
+    );
+  }
+  const path = await save({
+    title: "Export project",
+    defaultPath: `${safeName(project.name)}.uar`,
+    filters: [{ name: "Up and Running project", extensions: ["uar"] }],
+  });
+  if (!path) return null;
+
+  const portable = await prepareProjectPortable(project, includeAttachments);
+  // Name links by their target's current name so the bundle reads correctly
+  // even where an item was linked without an explicit label.
+  const names: NameMap = {};
+  for (const c of portable.checklists) names[c.id] = c.name;
+  for (const d of portable.docs) names[d.id] = d.name;
+
+  const payload = {
+    itemKind: "project",
+    ...portable,
+    checklists: portable.checklists.map((c) => withResolvedLabels(c, names)),
+    docs: portable.docs.map((d) => ({
+      ...d,
+      resources: fillLabels(d.resources, names),
+    })),
+  };
+  await writeTextFile(path, JSON.stringify(payload, null, 2));
   return path;
 }
 

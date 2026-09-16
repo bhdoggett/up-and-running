@@ -74,13 +74,13 @@ export interface FileUse {
  * files attached to checklists, their steps, and docs — deduplicated by path so
  * the same file used in three places shows once.
  */
-export function allFiles(state: AppState): FileUse[] {
+export function allFiles(project: Project): FileUse[] {
   const uses: FileUse[] = [];
 
-  for (const r of state.files) {
-    if (r.kind === "file") uses.push({ resource: r, where: "Library" });
+  for (const r of project.files) {
+    if (r.kind === "file") uses.push({ resource: r, where: "Project" });
   }
-  for (const c of state.checklists) {
+  for (const c of project.checklists) {
     for (const r of c.resources) {
       if (r.kind === "file") uses.push({ resource: r, where: c.name });
     }
@@ -94,7 +94,7 @@ export function allFiles(state: AppState): FileUse[] {
       }
     }
   }
-  for (const d of state.docs) {
+  for (const d of project.docs) {
     for (const r of d.resources) {
       if (r.kind === "file") uses.push({ resource: r, where: d.name });
     }
@@ -159,17 +159,78 @@ export interface Selection {
   id: string;
 }
 
-export interface AppState {
+/**
+ * An umbrella for everything belonging to one event or effort: its checklists,
+ * reference docs, and files. A project is the unit that exports as a .uar
+ * bundle, so links between its items survive the trip to another machine.
+ */
+export interface Project {
+  id: string;
+  name: string;
   checklists: Checklist[];
   docs: Doc[];
-  /** Loose files kept in the library, not tied to any checklist or doc. */
+  /** Files kept in the project, not tied to a specific checklist or doc. */
   files: Resource[];
+}
+
+export interface AppState {
+  projects: Project[];
+  activeProjectId: string | null;
   active: Selection | null;
-  /** Pre-docs format; migrated into `active` on load. */
+  /** Pre-projects format; migrated into `projects` on load. */
+  checklists?: Checklist[];
+  docs?: Doc[];
+  files?: Resource[];
   activeChecklistId?: string | null;
 }
 
 export function newId(): string {
   // Available in the Tauri webview (secure context).
   return crypto.randomUUID();
+}
+
+/** Fill in any missing pieces of a project (also used when importing one). */
+export function normalizeProject(p: Partial<Project>): Project {
+  return {
+    id: p.id ?? newId(),
+    name: typeof p.name === "string" && p.name.trim() ? p.name : "Untitled project",
+    checklists: Array.isArray(p.checklists) ? p.checklists.map(withSections) : [],
+    docs: Array.isArray(p.docs)
+      ? p.docs.map((d) => ({
+          id: d.id ?? newId(),
+          name: d.name ?? "Untitled doc",
+          body: typeof d.body === "string" ? d.body : "",
+          resources: Array.isArray(d.resources) ? d.resources : [],
+        }))
+      : [],
+    files: Array.isArray(p.files) ? p.files : [],
+  };
+}
+
+/**
+ * Bring saved state up to date. Anything from before projects existed becomes
+ * the contents of one starter project, so nothing is lost or re-homed by hand.
+ */
+export function migrateState(saved: AppState): AppState {
+  const projects = Array.isArray(saved.projects) && saved.projects.length > 0
+    ? saved.projects.map(normalizeProject)
+    : [
+        normalizeProject({
+          name: "My library",
+          checklists: saved.checklists ?? [],
+          docs: saved.docs ?? [],
+          files: saved.files ?? [],
+        }),
+      ];
+
+  const activeProjectId =
+    projects.find((p) => p.id === saved.activeProjectId)?.id ?? projects[0].id;
+
+  const active =
+    saved.active ??
+    (saved.activeChecklistId
+      ? { kind: "checklist" as const, id: saved.activeChecklistId }
+      : null);
+
+  return { projects, activeProjectId, active };
 }

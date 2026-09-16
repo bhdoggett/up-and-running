@@ -29,6 +29,126 @@
   margin-top: 0.15rem;
 }
 
+/* Project switcher: which event's material the lists below belong to. */
+.projectRow {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.35rem;
+}
+.projectBtn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.5rem;
+  color: var(--text);
+}
+.projectBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.projectName {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.projectAction {
+  flex: none;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.3rem;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.projectAction:hover {
+  color: var(--accent);
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+.projectInput {
+  width: 100%;
+  margin-top: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.5rem;
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
+
+/* Rows inside the project dropdown. */
+.projectItem {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.55rem;
+  color: var(--text);
+}
+.projectItem:hover {
+  background: var(--accent-soft);
+}
+.projectCurrent {
+  color: var(--accent);
+  font-weight: 600;
+}
+.projectItemName {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.projectItemMeta {
+  flex: none;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+.menuSep {
+  height: 1px;
+  background: var(--border);
+  margin: 0.3rem 0.2rem;
+}
+.menuAction {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.55rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.menuAction:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.menuDanger:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
 .listHead {
   display: flex;
   align-items: center;

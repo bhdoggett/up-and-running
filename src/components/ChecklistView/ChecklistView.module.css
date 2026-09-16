@@ -194,8 +194,17 @@
   justify-content: flex-end;
   margin-top: 0.45rem;
 }
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.titleRow .titleBtn {
+  min-width: 0;
+}
 .addDesc {
-  margin-top: 0.55rem;
+  flex: none;
   background: none;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-sm);

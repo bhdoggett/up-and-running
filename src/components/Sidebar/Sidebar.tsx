@@ -1,11 +1,18 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { confirm } from "@tauri-apps/plugin-dialog";
-import type { Checklist, Doc, FileUse, ItemKind, Selection } from "../../types";
+import type { Checklist, Doc, FileUse, ItemKind, Project, Selection } from "../../types";
 import { allTasks } from "../../types";
 import styles from "./Sidebar.module.css";
 
 interface Props {
+  projects: Project[];
+  activeProjectId: string | null;
+  onSelectProject: (id: string) => void;
+  onAddProject: () => void;
+  onRenameProject: (id: string, name: string) => void;
+  onDeleteProject: (id: string) => void;
+  onExportProject: () => void;
   checklists: Checklist[];
   docs: Doc[];
   active: Selection | null;
@@ -32,6 +39,13 @@ interface Item {
 }
 
 export default function Sidebar({
+  projects,
+  activeProjectId,
+  onSelectProject,
+  onAddProject,
+  onRenameProject,
+  onDeleteProject,
+  onExportProject,
   checklists,
   docs,
   active,
@@ -58,6 +72,21 @@ export default function Sidebar({
     top: number;
     left: number;
   } | null>(null);
+
+  const [projectMenu, setProjectMenu] = useState<{ top: number; left: number } | null>(
+    null,
+  );
+  const [editingProject, setEditingProject] = useState(false);
+  const [projectDraft, setProjectDraft] = useState("");
+
+  const activeProject = projects.find((p) => p.id === activeProjectId) ?? null;
+
+  function commitProjectRename() {
+    if (activeProject) {
+      onRenameProject(activeProject.id, projectDraft.trim() || "Untitled project");
+    }
+    setEditingProject(false);
+  }
 
   const MENU_WIDTH = 210;
 
@@ -187,7 +216,54 @@ export default function Sidebar({
     <aside className={styles.sidebar} style={{ width }}>
       <div className={styles.brand}>
         <div className={styles.brandName}>Up and Running</div>
-        <div className={styles.brandSub}>Event setup guides</div>
+        {editingProject ? (
+          <input
+            className={styles.projectInput}
+            value={projectDraft}
+            autoFocus
+            onChange={(e) => setProjectDraft(e.target.value)}
+            onBlur={commitProjectRename}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitProjectRename();
+              if (e.key === "Escape") setEditingProject(false);
+            }}
+          />
+        ) : (
+          <div className={styles.projectRow}>
+            <button
+              className={styles.projectBtn}
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setProjectMenu(
+                  projectMenu
+                    ? null
+                    : { top: r.bottom + 6, left: Math.min(r.left, window.innerWidth - 240) },
+                );
+              }}
+              title="Switch project"
+            >
+              <span className={styles.projectName}>
+                {activeProject?.name ?? "No project"}
+              </span>
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <button
+              className={styles.projectAction}
+              onClick={() => {
+                setProjectDraft(activeProject?.name ?? "");
+                setEditingProject(true);
+              }}
+              title="Rename project"
+              aria-label="Rename project"
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M11.5 2.5l2 2L6 12l-2.5.5L4 10l7.5-7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className={styles.scroll}>
@@ -265,6 +341,77 @@ export default function Sidebar({
           ))}
         </ul>
       </div>
+
+      {projectMenu &&
+        createPortal(
+          <>
+            <div className={styles.menuBackdrop} onClick={() => setProjectMenu(null)} />
+            <div
+              className={styles.menu}
+              style={{ top: projectMenu.top, left: projectMenu.left, width: 230 }}
+            >
+              {projects.map((p) => (
+                <button
+                  key={p.id}
+                  className={`${styles.projectItem} ${p.id === activeProjectId ? styles.projectCurrent : ""}`}
+                  onClick={() => {
+                    setProjectMenu(null);
+                    onSelectProject(p.id);
+                  }}
+                >
+                  <span className={styles.projectItemName}>{p.name}</span>
+                  <span className={styles.projectItemMeta}>
+                    {p.checklists.length + p.docs.length} item
+                    {p.checklists.length + p.docs.length === 1 ? "" : "s"}
+                  </span>
+                </button>
+              ))}
+              <div className={styles.menuSep} />
+              <button
+                className={styles.menuAction}
+                onClick={() => {
+                  setProjectMenu(null);
+                  onAddProject();
+                }}
+              >
+                + New project
+              </button>
+              <button
+                className={styles.menuAction}
+                onClick={() => {
+                  setProjectMenu(null);
+                  onImport();
+                }}
+              >
+                Import a project or checklist…
+              </button>
+              {activeProject && (
+                <button
+                  className={styles.menuAction}
+                  onClick={() => {
+                    setProjectMenu(null);
+                    onExportProject();
+                  }}
+                >
+                  Export this project (.uar)
+                </button>
+              )}
+              {activeProject && projects.length > 0 && (
+                <button
+                  className={`${styles.menuAction} ${styles.menuDanger}`}
+                  onClick={() => {
+                    const id = activeProject.id;
+                    setProjectMenu(null);
+                    onDeleteProject(id);
+                  }}
+                >
+                  Delete “{activeProject.name}”
+                </button>
+              )}
+            </div>
+          </>,
+          document.body,
+        )}
 
       {menu &&
         createPortal(

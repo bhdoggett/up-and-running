@@ -165,16 +165,28 @@ export default function ChecklistView({ checklist, onChange }: Props) {
                 }}
               />
             ) : (
-              <button
-                className={styles.titleBtn}
-                onClick={startRename}
-                title="Click to rename"
-              >
-                <h1 className={styles.title}>{checklist.name}</h1>
-                <svg className={styles.titlePencil} width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M11.5 2.5l2 2L6 12l-2.5.5L4 10l7.5-7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-                </svg>
-              </button>
+              <div className={styles.titleRow}>
+                <button
+                  className={styles.titleBtn}
+                  onClick={startRename}
+                  title="Click to rename"
+                >
+                  <h1 className={styles.title}>{checklist.name}</h1>
+                  <svg className={styles.titlePencil} width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M11.5 2.5l2 2L6 12l-2.5.5L4 10l7.5-7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                {/* Sits beside the name so it reads as part of the title area. */}
+                {!hasDescription && !editingDesc && (
+                  <button
+                    className={styles.addDesc}
+                    onClick={() => setEditingDesc(true)}
+                    title="Add an intro or summary"
+                  >
+                    + Description
+                  </button>
+                )}
+              </div>
             )}
             <div className={styles.meta}>
               <span>
@@ -190,16 +202,6 @@ export default function ChecklistView({ checklist, onChange }: Props) {
               resources={checklist.resources}
               onChange={(resources) => onChange({ ...checklist, resources })}
             />
-            {/* The description only takes up space once it has content. */}
-            {!hasDescription && !editingDesc && (
-              <button
-                className={styles.addDesc}
-                onClick={() => setEditingDesc(true)}
-                title="Add an intro or summary"
-              >
-                + Description
-              </button>
-            )}
           </div>
           <div className={styles.exportWrap}>
             <button

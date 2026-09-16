@@ -1,5 +1,5 @@
 import { readFile, stat } from "@tauri-apps/plugin-fs";
-import type { Checklist, Doc, Resource } from "./types";
+import type { Checklist, Doc, Project, Resource } from "./types";
 import { allTasks } from "./types";
 import { isLocalPath } from "./components/MarkdownView/MarkdownView";
 
@@ -204,6 +204,46 @@ export async function prepareDocPortable(
     resources: includeAttachments
       ? await embedResourceList(doc.resources)
       : doc.resources,
+  };
+}
+
+/** Every local file attachment in a project, across all its items. */
+export function localProjectAttachments(project: Project): Resource[] {
+  return [
+    ...project.files,
+    ...project.checklists.flatMap(localAttachments),
+    ...project.docs.flatMap(localDocAttachments),
+  ].filter((r) => r.kind === "file" && isLocalPath(r.target));
+}
+
+export async function totalProjectAttachmentBytes(project: Project): Promise<number> {
+  const sizes = await Promise.all(
+    localProjectAttachments(project).map(async (r) => {
+      try {
+        return (await stat(r.target)).size;
+      } catch {
+        return 0;
+      }
+    }),
+  );
+  return sizes.reduce((a, b) => a + b, 0);
+}
+
+// The whole project made portable: images inlined everywhere, attachments
+// optionally bundled, so links between its items survive on another machine.
+export async function prepareProjectPortable(
+  project: Project,
+  includeAttachments: boolean,
+): Promise<Project> {
+  return {
+    ...project,
+    checklists: await Promise.all(
+      project.checklists.map((c) => preparePortable(c, includeAttachments)),
+    ),
+    docs: await Promise.all(
+      project.docs.map((d) => prepareDocPortable(d, includeAttachments)),
+    ),
+    files: includeAttachments ? await embedResourceList(project.files) : project.files,
   };
 }
 
