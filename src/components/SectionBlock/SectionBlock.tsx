@@ -94,14 +94,23 @@ export default function SectionBlock({
     setEditingName(false);
   }
 
+  // Always confirms, even when empty: this removes a whole block of the
+  // checklist and, if it holds steps, takes them with it.
   async function requestDelete() {
-    if (section.tasks.length > 0) {
-      const ok = await confirm(
-        `“${section.name || "This section"}” has ${section.tasks.length} step${section.tasks.length === 1 ? "" : "s"}. Delete the section and its steps?`,
-        { title: "Delete section", kind: "warning", okLabel: "Delete", cancelLabel: "Cancel" },
-      );
-      if (!ok) return;
-    }
+    const name = section.name || "this section";
+    const ok = await confirm(
+      total > 0
+        ? `Delete “${name}” and the ${total} step${total === 1 ? "" : "s"} in it?\n\nThis can't be undone.`
+        : `Delete “${name}”?`,
+      {
+        title: "Delete section",
+        kind: "warning",
+        okLabel: total > 0 ? `Delete ${total} step${total === 1 ? "" : "s"}` : "Delete",
+        cancelLabel: "Keep",
+      },
+    );
+    if (!ok) return;
+    setEditingName(false);
     onDelete();
   }
 
@@ -262,16 +271,23 @@ export default function SectionBlock({
                   </svg>
                 </button>
               </div>
-              <button
-                className={`${styles.iconBtn} ${styles.danger}`}
-                onClick={requestDelete}
-                title="Delete section"
-                aria-label="Delete section"
-              >
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                  <path d="M3 4h10M6.5 4V3h3v1M4.5 4l.5 9h6l.5-9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
+              {/* Deleting a section takes its steps with it, so it is only
+                  offered once you have deliberately opened the name for
+                  editing — not sitting in the row waiting to be mis-clicked. */}
+              {editingName && (
+                <button
+                  className={styles.deleteBtn}
+                  // The input's blur would close the editor before the click
+                  // landed, so commit on mousedown instead.
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    requestDelete();
+                  }}
+                  title="Delete this section and its steps"
+                >
+                  Delete section
+                </button>
+              )}
               {/* Last in the row so it sits flush right, clear of the controls. */}
               <span
                 className={`${styles.count} ${total > 0 && done === total ? styles.complete : ""}`}
