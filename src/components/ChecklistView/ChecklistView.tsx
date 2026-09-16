@@ -5,6 +5,7 @@ import { exportChecklistToHtml } from "../../exportHtml";
 import { useNameMap } from "../../library";
 import { acceptDrop, type Drag, type DropTarget } from "../../dragState";
 import { moveTask, moveSection } from "../../reorder";
+import { NO_PULSE, type ExpandPulse } from "../../viewState";
 import SectionBlock from "../SectionBlock/SectionBlock";
 import ResourceList from "../ResourceList/ResourceList";
 import MarkdownView from "../MarkdownView/MarkdownView";
@@ -24,6 +25,7 @@ export default function ChecklistView({ checklist, onChange }: Props) {
   const [drag, setDrag] = useState<Drag>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget>(null);
   const [editingDesc, setEditingDesc] = useState(false);
+  const [pulse, setPulse] = useState<ExpandPulse>(NO_PULSE);
   const names = useNameMap();
 
   const hasDescription = checklist.description.trim() !== "";
@@ -98,11 +100,14 @@ export default function ChecklistView({ checklist, onChange }: Props) {
     });
   }
 
+  // Collapses/expands sections *and* every step's details, so "expand all"
+  // means all of it rather than just the section headers.
   function setAllCollapsed(collapsed: boolean) {
     onChange({
       ...checklist,
       sections: checklist.sections.map((s) => ({ ...s, collapsed })),
     });
+    setPulse((p) => ({ count: p.count + 1, open: !collapsed }));
   }
 
   async function runExport() {
@@ -265,6 +270,7 @@ export default function ChecklistView({ checklist, onChange }: Props) {
             setDrag={setDrag}
             dropTarget={dropTarget}
             setDropTarget={setDropTarget}
+            pulse={pulse}
             onMoveTask={handleMoveTask}
             onMoveSection={handleMoveSection}
           />
@@ -301,7 +307,8 @@ export default function ChecklistView({ checklist, onChange }: Props) {
           <button className={styles.ghostBtn} onClick={addSection}>
             + Add section
           </button>
-          {showHeaders && checklist.sections.length > 1 && (
+          {/* Useful with one section too, now that these reach the steps. */}
+          {total > 0 && (
             <>
               <button className={styles.ghostBtn} onClick={() => setAllCollapsed(true)}>
                 Collapse all

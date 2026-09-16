@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import type { Resource, Task } from "../../types";
 import MarkdownView from "../MarkdownView/MarkdownView";
@@ -6,6 +6,7 @@ import MarkdownEditor from "../MarkdownEditor/MarkdownEditor";
 import ResourceList from "../ResourceList/ResourceList";
 import { resolveAppImage, openLink } from "../../appLinks";
 import { useLibrary, useResourceLabel, isInternal } from "../../library";
+import type { ExpandPulse } from "../../viewState";
 import styles from "./TaskItem.module.css";
 
 interface Props {
@@ -15,6 +16,8 @@ interface Props {
   onDelete: () => void;
   /** Position in the checklist, counted continuously across sections. */
   number: number;
+  /** Broadcast from "collapse all" / "expand all". */
+  pulse: ExpandPulse;
   /** Start in edit mode (used for freshly-added steps). */
   autoEdit?: boolean;
   dragging?: boolean;
@@ -32,6 +35,7 @@ export default function TaskItem({
   onUpdate,
   onDelete,
   number,
+  pulse,
   autoEdit = false,
   dragging = false,
   dropLine = false,
@@ -49,6 +53,16 @@ export default function TaskItem({
   const labelFor = useResourceLabel();
 
   const hasBody = task.details.trim() !== "" || task.resources.length > 0;
+
+  // Follow "collapse all" / "expand all", but only on a count this step hasn't
+  // acted on yet — otherwise every re-render would fight manual toggling.
+  const seenPulse = useRef(pulse.count);
+  useEffect(() => {
+    if (pulse.count === seenPulse.current) return;
+    seenPulse.current = pulse.count;
+    setExpanded(pulse.open);
+    if (!pulse.open) setEditing(false);
+  }, [pulse]);
 
   function openResource(r: Resource) {
     if (isInternal(r.kind)) {

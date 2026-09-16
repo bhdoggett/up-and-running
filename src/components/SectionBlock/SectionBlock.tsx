@@ -4,6 +4,7 @@ import type { Section, Task } from "../../types";
 import { newId } from "../../types";
 import TaskItem from "../TaskItem/TaskItem";
 import { acceptDrop, type Drag, type DropTarget } from "../../dragState";
+import type { ExpandPulse } from "../../viewState";
 import styles from "./SectionBlock.module.css";
 
 interface Props {
@@ -27,6 +28,8 @@ interface Props {
     beforeTaskId: string | null,
   ) => void;
   onMoveSection: (sectionId: string, beforeSectionId: string | null) => void;
+  /** Broadcast from "collapse all" / "expand all". */
+  pulse: ExpandPulse;
 }
 
 export default function SectionBlock({
@@ -42,6 +45,7 @@ export default function SectionBlock({
   setDropTarget,
   onMoveTask,
   onMoveSection,
+  pulse,
 }: Props) {
   const listRef = useRef<HTMLUListElement>(null);
   const [newTitle, setNewTitle] = useState("");
@@ -313,6 +317,7 @@ export default function SectionBlock({
                   key={task.id}
                   task={task}
                   number={startNumber + i}
+                  pulse={pulse}
                   autoEdit={task.id === justAddedId}
                   dragging={drag?.type === "task" && drag.taskId === task.id}
                   dropLine={
