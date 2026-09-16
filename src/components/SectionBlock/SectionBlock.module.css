@@ -145,6 +145,8 @@
 /* A section heads the steps beneath it, so it reads larger than a step title
    (0.98rem) rather than as a small uppercase label. */
 .name {
+  /* Shrinkable so the chevron stays pinned beside the title. */
+  min-width: 0;
   font-family: "Barlow Condensed", Barlow, sans-serif;
   font-size: 1.35rem;
   font-weight: 600;

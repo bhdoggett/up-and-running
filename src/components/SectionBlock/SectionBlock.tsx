@@ -237,6 +237,7 @@ export default function SectionBlock({
                 aria-expanded={!section.collapsed}
                 title={section.collapsed ? "Expand section" : "Collapse section"}
               >
+                <span className={styles.name}>{section.name}</span>
                 <svg
                   className={`${styles.chevron} ${section.collapsed ? "" : styles.open}`}
                   width="11"
@@ -247,7 +248,6 @@ export default function SectionBlock({
                 >
                   <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <span className={styles.name}>{section.name}</span>
               </button>
               <button
                 className={styles.iconBtn}
