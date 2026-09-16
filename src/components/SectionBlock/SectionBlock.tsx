@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import type { Section, Task } from "../../types";
 import { newId } from "../../types";
@@ -46,6 +46,19 @@ export default function SectionBlock({
   const done = section.tasks.filter((t) => t.done).length;
   const total = section.tasks.length;
   const collapsed = showHeader && section.collapsed;
+  const allDone = total > 0 && done === total;
+
+  // "Some but not all" has no HTML attribute — it has to be set on the node.
+  const checkAll = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (checkAll.current) {
+      checkAll.current.indeterminate = done > 0 && done < total;
+    }
+  }, [done, total]);
+
+  function setAllDone(value: boolean) {
+    setTasks(section.tasks.map((t) => ({ ...t, done: value })));
+  }
 
   function setTasks(tasks: Task[]) {
     onChange({ ...section, tasks });
@@ -193,6 +206,16 @@ export default function SectionBlock({
                   <circle cx="3" cy="11" r="1.2" /><circle cx="7" cy="11" r="1.2" />
                 </svg>
               </span>
+              <input
+                ref={checkAll}
+                type="checkbox"
+                className={styles.checkAll}
+                checked={allDone}
+                disabled={total === 0}
+                onChange={() => setAllDone(!allDone)}
+                title={allDone ? "Uncheck every step here" : "Check every step here"}
+                aria-label={`Mark all steps in ${section.name || "this section"}`}
+              />
               <button
                 className={styles.toggle}
                 onClick={() => onChange({ ...section, collapsed: !section.collapsed })}

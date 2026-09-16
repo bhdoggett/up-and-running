@@ -120,6 +120,16 @@ export default function ChecklistView({ checklist, onChange }: Props) {
     onChange({ ...checklist, sections: rest });
   }
 
+  function setAllUnchecked() {
+    onChange({
+      ...checklist,
+      sections: checklist.sections.map((s) => ({
+        ...s,
+        tasks: s.tasks.map((t) => (t.done ? { ...t, done: false } : t)),
+      })),
+    });
+  }
+
   function setAllCollapsed(collapsed: boolean) {
     onChange({
       ...checklist,
@@ -190,6 +200,16 @@ export default function ChecklistView({ checklist, onChange }: Props) {
                 <span className={styles.bar}>
                   <span className={styles.barFill} style={{ width: `${pct}%` }} />
                 </span>
+              )}
+              {/* Reset for the next time the checklist is run. */}
+              {done > 0 && (
+                <button
+                  className={styles.uncheckAll}
+                  onClick={setAllUnchecked}
+                  title="Clear every checkbox in this checklist"
+                >
+                  Uncheck all
+                </button>
               )}
             </div>
             <ResourceList

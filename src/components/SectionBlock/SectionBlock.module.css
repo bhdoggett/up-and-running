@@ -60,6 +60,19 @@
   box-shadow: 0 0 6px var(--accent);
 }
 
+/* Checks or clears every step in the section; shows a dash when partly done. */
+.checkAll {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.checkAll:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .toggle {
   display: flex;
   align-items: center;
