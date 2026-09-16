@@ -201,6 +201,28 @@
   color: var(--amber);
 }
 
+.busy {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.spinner {
+  width: 0.8rem;
+  height: 0.8rem;
+  border: 2px solid var(--rule-strong);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .notice {
   flex: none;
   color: var(--amber);

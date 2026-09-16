@@ -35,6 +35,9 @@ export default function ResourceList({
   const { docs, currentId, navigate, fileDrag, attachFiles } = useLibrary();
   const [over, setOver] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  // Reading and hashing a large video takes seconds; without this the app
+  // looks like it ignored the file until it suddenly appears.
+  const [busy, setBusy] = useState(false);
 
   /** Say something briefly in the row itself, rather than in a dialog. */
   function say(text: string) {
@@ -92,10 +95,13 @@ export default function ResourceList({
     // Identify it by contents, not path: the same file dropped in earlier was
     // copied into the app and so carries a different path entirely.
     let hash: string | undefined;
+    setBusy(true);
     try {
       hash = await hashBytes(await readFile(selected));
     } catch (e) {
       console.error("Could not read the chosen file", e);
+    } finally {
+      setBusy(false);
     }
 
     if (alreadyAttached(selected, hash)) {
@@ -208,7 +214,13 @@ export default function ResourceList({
             </ul>
           )}
 
-          {notice && row.key === "file" && (
+          {row.key === "file" && busy && (
+            <span className={styles.busy}>
+              <span className={styles.spinner} aria-hidden="true" />
+              Adding…
+            </span>
+          )}
+          {row.key === "file" && !busy && notice && (
             <span className={styles.notice}>{notice}</span>
           )}
 
@@ -277,7 +289,10 @@ export default function ResourceList({
             // what clears the drag state, so swallowing the event here left
             // every drop zone on screen afterwards.
             setOver(false);
-            const added = await attachFiles(e.dataTransfer.files);
+            setBusy(true);
+            const added = await attachFiles(e.dataTransfer.files).finally(() =>
+              setBusy(false),
+            );
             // The same file dropped here twice is one attachment, not two.
             const fresh = added.filter((r) => !alreadyAttached(r.target, r.hash));
             if (fresh.length) {
