@@ -17,8 +17,33 @@
 .head {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.85rem 0.95rem;
+  gap: 0.55rem;
+  padding: 0.85rem 0.95rem 0.85rem 0.5rem;
+}
+
+/* Grip is the only drag affordance, so selecting text in the card still works. */
+.grip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.1rem;
+  color: var(--border-strong);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.item:hover .grip {
+  opacity: 1;
+}
+.grip:active {
+  cursor: grabbing;
+  color: var(--accent);
+}
+
+.item.dragging {
+  opacity: 0.45;
+  border-color: var(--accent);
 }
 
 .check {

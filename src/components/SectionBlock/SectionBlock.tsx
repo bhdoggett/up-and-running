@@ -3,6 +3,7 @@ import { confirm } from "@tauri-apps/plugin-dialog";
 import type { Section, Task } from "../../types";
 import { newId } from "../../types";
 import TaskItem from "../TaskItem/TaskItem";
+import { acceptDrop, type Drag } from "../../dragState";
 import styles from "./SectionBlock.module.css";
 
 interface Props {
@@ -11,6 +12,15 @@ interface Props {
   showHeader: boolean;
   onChange: (section: Section) => void;
   onDelete: () => void;
+  drag: Drag;
+  setDrag: (d: Drag) => void;
+  onMoveTask: (
+    taskId: string,
+    fromSectionId: string,
+    toSectionId: string,
+    beforeTaskId: string | null,
+  ) => void;
+  onMoveSection: (sectionId: string, beforeSectionId: string | null) => void;
 }
 
 export default function SectionBlock({
@@ -18,6 +28,10 @@ export default function SectionBlock({
   showHeader,
   onChange,
   onDelete,
+  drag,
+  setDrag,
+  onMoveTask,
+  onMoveSection,
 }: Props) {
   const [newTitle, setNewTitle] = useState("");
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
@@ -67,10 +81,45 @@ export default function SectionBlock({
     onDelete();
   }
 
+  const draggingThisSection = drag?.type === "section" && drag.sectionId === section.id;
+
+  function dropOnTask(beforeTaskId: string | null) {
+    return (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (drag?.type === "task") {
+        onMoveTask(drag.taskId, drag.fromSectionId, section.id, beforeTaskId);
+      } else if (drag?.type === "section") {
+        onMoveSection(drag.sectionId, section.id);
+      }
+      setDrag(null);
+    };
+  }
+
   return (
-    <section className={styles.section}>
+    <section
+      className={`${styles.section} ${draggingThisSection ? styles.dragging : ""}`}
+      onDragOver={(e) => {
+        // Let a task dropped anywhere in this section land at the end.
+        if (drag) acceptDrop(e);
+      }}
+      onDrop={dropOnTask(null)}
+    >
       {showHeader && (
-        <div className={styles.head}>
+        <div
+          className={styles.head}
+          onDragOver={(e) => {
+            if (drag?.type === "section") acceptDrop(e);
+          }}
+          onDrop={(e) => {
+            if (drag?.type === "section") {
+              e.preventDefault();
+              e.stopPropagation();
+              onMoveSection(drag.sectionId, section.id);
+              setDrag(null);
+            }
+          }}
+        >
           {editingName ? (
             <input
               className={styles.nameInput}
@@ -85,6 +134,24 @@ export default function SectionBlock({
             />
           ) : (
             <>
+              <span
+                className={styles.grip}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("text/plain", section.id);
+                  setDrag({ type: "section", sectionId: section.id });
+                }}
+                onDragEnd={() => setDrag(null)}
+                title="Drag to reorder section"
+                aria-label="Drag to reorder section"
+              >
+                <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" aria-hidden="true">
+                  <circle cx="3" cy="3" r="1.2" /><circle cx="7" cy="3" r="1.2" />
+                  <circle cx="3" cy="7" r="1.2" /><circle cx="7" cy="7" r="1.2" />
+                  <circle cx="3" cy="11" r="1.2" /><circle cx="7" cy="11" r="1.2" />
+                </svg>
+              </span>
               <button
                 className={styles.toggle}
                 onClick={() => onChange({ ...section, collapsed: !section.collapsed })}
@@ -144,6 +211,15 @@ export default function SectionBlock({
                   key={task.id}
                   task={task}
                   autoEdit={task.id === justAddedId}
+                  dragging={drag?.type === "task" && drag.taskId === task.id}
+                  onDragStart={() =>
+                    setDrag({ type: "task", taskId: task.id, fromSectionId: section.id })
+                  }
+                  onDragEnd={() => setDrag(null)}
+                  onDragOver={(e) => {
+                    if (drag?.type === "task") acceptDrop(e);
+                  }}
+                  onDrop={dropOnTask(task.id)}
                   onToggleDone={() =>
                     setTasks(
                       section.tasks.map((t) =>

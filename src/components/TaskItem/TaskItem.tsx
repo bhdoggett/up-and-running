@@ -14,6 +14,11 @@ interface Props {
   onDelete: () => void;
   /** Start in edit mode (used for freshly-added steps). */
   autoEdit?: boolean;
+  dragging?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
 }
 
 export default function TaskItem({
@@ -22,7 +27,13 @@ export default function TaskItem({
   onUpdate,
   onDelete,
   autoEdit = false,
+  dragging = false,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
 }: Props) {
+  const [handleHeld, setHandleHeld] = useState(false);
   const [expanded, setExpanded] = useState(autoEdit);
   const [editing, setEditing] = useState(autoEdit);
   const { navigate } = useLibrary();
@@ -43,8 +54,32 @@ export default function TaskItem({
   }
 
   return (
-    <li className={`${styles.item} ${task.done ? styles.done : ""}`}>
+    <li
+      className={`${styles.item} ${task.done ? styles.done : ""} ${dragging ? styles.dragging : ""}`}
+      // Only the grip starts a drag, so text selection inside the card still works.
+      draggable={handleHeld}
+      onDragStart={() => onDragStart?.()}
+      onDragEnd={() => {
+        setHandleHeld(false);
+        onDragEnd?.();
+      }}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
       <div className={styles.head}>
+        <span
+          className={styles.grip}
+          onMouseDown={() => setHandleHeld(true)}
+          onMouseUp={() => setHandleHeld(false)}
+          title="Drag to reorder step"
+          aria-label="Drag to reorder step"
+        >
+          <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" aria-hidden="true">
+            <circle cx="3" cy="3" r="1.2" /><circle cx="7" cy="3" r="1.2" />
+            <circle cx="3" cy="7" r="1.2" /><circle cx="7" cy="7" r="1.2" />
+            <circle cx="3" cy="11" r="1.2" /><circle cx="7" cy="11" r="1.2" />
+          </svg>
+        </span>
         <input
           type="checkbox"
           className={styles.check}

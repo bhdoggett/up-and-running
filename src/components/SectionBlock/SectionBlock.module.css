@@ -11,6 +11,30 @@
   margin-bottom: 0.6rem;
 }
 
+.grip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.1rem;
+  margin-left: -0.15rem;
+  color: var(--border-strong);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.head:hover .grip {
+  opacity: 1;
+}
+.grip:active {
+  cursor: grabbing;
+  color: var(--accent);
+}
+
+.section.dragging {
+  opacity: 0.45;
+}
+
 .toggle {
   display: flex;
   align-items: center;

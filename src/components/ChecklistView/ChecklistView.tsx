@@ -3,6 +3,7 @@ import type { Checklist, Section } from "../../types";
 import { newId, allTasks } from "../../types";
 import { exportChecklistToHtml, exportChecklistToUar } from "../../exportHtml";
 import { useNameMap } from "../../library";
+import type { Drag } from "../../dragState";
 import SectionBlock from "../SectionBlock/SectionBlock";
 import ResourceList from "../ResourceList/ResourceList";
 import styles from "./ChecklistView.module.css";
@@ -16,6 +17,7 @@ export default function ChecklistView({ checklist, onChange }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
+  const [drag, setDrag] = useState<Drag>(null);
   const names = useNameMap();
 
   const tasks = allTasks(checklist);
@@ -62,6 +64,53 @@ export default function ChecklistView({ checklist, onChange }: Props) {
       tasks: [],
     };
     onChange({ ...checklist, sections: [...checklist.sections, section] });
+  }
+
+  // --- reordering -------------------------------------------------------
+  // Tasks can move within a section or across sections; sections reorder among
+  // themselves. Insertion is always "before the drop target", with a trailing
+  // zone at the end of each list to append.
+  function moveTask(
+    taskId: string,
+    fromSectionId: string,
+    toSectionId: string,
+    beforeTaskId: string | null,
+  ) {
+    // Dropping a task on itself is a no-op; without this it would be removed
+    // and then appended to the end.
+    if (taskId === beforeTaskId) return;
+    const from = checklist.sections.find((s) => s.id === fromSectionId);
+    const task = from?.tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const sections = checklist.sections.map((s) =>
+      s.id === fromSectionId ? { ...s, tasks: s.tasks.filter((t) => t.id !== taskId) } : s,
+    );
+
+    onChange({
+      ...checklist,
+      sections: sections.map((s) => {
+        if (s.id !== toSectionId) return s;
+        const tasks = [...s.tasks];
+        const at = beforeTaskId
+          ? tasks.findIndex((t) => t.id === beforeTaskId)
+          : tasks.length;
+        tasks.splice(at === -1 ? tasks.length : at, 0, task);
+        return { ...s, tasks };
+      }),
+    });
+  }
+
+  function moveSection(sectionId: string, beforeSectionId: string | null) {
+    const current = checklist.sections;
+    const moving = current.find((s) => s.id === sectionId);
+    if (!moving || sectionId === beforeSectionId) return;
+    const rest = current.filter((s) => s.id !== sectionId);
+    const at = beforeSectionId
+      ? rest.findIndex((s) => s.id === beforeSectionId)
+      : rest.length;
+    rest.splice(at === -1 ? rest.length : at, 0, moving);
+    onChange({ ...checklist, sections: rest });
   }
 
   function setAllCollapsed(collapsed: boolean) {
@@ -174,6 +223,10 @@ export default function ChecklistView({ checklist, onChange }: Props) {
             showHeader={showHeaders}
             onChange={updateSection}
             onDelete={() => deleteSection(section.id)}
+            drag={drag}
+            setDrag={setDrag}
+            onMoveTask={moveTask}
+            onMoveSection={moveSection}
           />
         ))}
 
