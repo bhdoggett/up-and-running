@@ -148,16 +148,6 @@ export default function ChecklistView({ checklist, onChange }: Props) {
                     <path d="M11.5 2.5l2 2L6 12l-2.5.5L4 10l7.5-7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
                   </svg>
                 </button>
-                {/* Sits beside the name so it reads as part of the title area. */}
-                {!hasDescription && !editingDesc && (
-                  <button
-                    className={styles.addDesc}
-                    onClick={() => setEditingDesc(true)}
-                    title="Add an intro or summary"
-                  >
-                    + Description
-                  </button>
-                )}
               </div>
             )}
             <div className={styles.meta}>
@@ -193,6 +183,15 @@ export default function ChecklistView({ checklist, onChange }: Props) {
                 </button>
               )}
             </div>
+            {!hasDescription && !editingDesc && (
+              <button
+                className={styles.addDesc}
+                onClick={() => setEditingDesc(true)}
+                title="Add an intro or summary"
+              >
+                + Description
+              </button>
+            )}
             <ResourceList
               resources={checklist.resources}
               onChange={(resources) => onChange({ ...checklist, resources })}

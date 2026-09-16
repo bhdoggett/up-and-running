@@ -195,7 +195,8 @@
   min-width: 0;
 }
 .addDesc {
-  flex: none;
+  display: inline-block;
+  margin-top: 0.55rem;
   background: none;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-sm);
