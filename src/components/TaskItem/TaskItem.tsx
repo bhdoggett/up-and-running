@@ -179,26 +179,22 @@ export default function TaskItem({
           )}
         </button>
 
-        {/* Doubles as the way out of edit mode, alongside "Done editing". */}
+        {/* A toggle, not a confirm: edits save as they are typed, so this only
+            opens and closes the editor. Shown switched on while it is open —
+            never a tick, which in this app means the step itself is done. */}
         <button
-          className={`${styles.iconBtn} ${editing ? styles.iconBtnDone : ""}`}
+          className={`${styles.iconBtn} ${editing ? styles.iconBtnActive : ""}`}
           onClick={() => {
             setEditing((v) => !v);
             setExpanded(true);
           }}
-          title={editing ? "Done editing" : "Edit step"}
-          aria-label={editing ? "Done editing" : "Edit step"}
+          aria-pressed={editing}
+          title={editing ? "Close the editor" : "Edit step"}
+          aria-label={editing ? "Close the editor" : "Edit step"}
         >
-          {editing ? (
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-              <rect x="1.8" y="1.8" width="12.4" height="12.4" rx="2" stroke="currentColor" strokeWidth="1.3" />
-              <path d="M4.6 8.2l2.3 2.3 4.5-4.8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ) : (
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-              <path d="M11.5 2.5l2 2L6 12l-2.5.5L4 10l7.5-7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-            </svg>
-          )}
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <path d="M11.5 2.5l2 2L6 12l-2.5.5L4 10l7.5-7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+          </svg>
         </button>
       </div>
 

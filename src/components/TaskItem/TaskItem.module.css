@@ -186,14 +186,12 @@
   background: var(--panel);
   border-color: var(--rule);
 }
-/* While editing, the same button confirms — show it as active. */
-.iconBtnDone {
-  color: var(--go);
-  opacity: 1;
-}
-.iconBtnDone:hover {
-  color: var(--go);
-  background: rgba(87, 201, 138, 0.12);
+/* Editor open: the tool is switched on. Amber is the app.s "active", kept
+   clear of green, which only ever means the step is done. */
+.iconBtnActive,
+.iconBtnActive:hover {
+  color: var(--amber);
+  background: var(--amber-dim);
   border-color: transparent;
 }
 .body {
