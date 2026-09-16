@@ -3,7 +3,7 @@ import type { Checklist, Section } from "../../types";
 import { newId, allTasks } from "../../types";
 import { exportChecklistToHtml } from "../../exportHtml";
 import { useNameMap } from "../../library";
-import type { Drag, DropTarget } from "../../dragState";
+import { acceptDrop, type Drag, type DropTarget } from "../../dragState";
 import { moveTask, moveSection } from "../../reorder";
 import SectionBlock from "../SectionBlock/SectionBlock";
 import ResourceList from "../ResourceList/ResourceList";
@@ -249,6 +249,31 @@ export default function ChecklistView({ checklist, onChange }: Props) {
             onMoveSection={handleMoveSection}
           />
         ))}
+
+        {/* Without this, the last position is unreachable: every other drop
+            target inserts *before* a section. */}
+        {drag?.type === "section" && (
+          <div
+            className={`${styles.tailZone} ${
+              dropTarget?.type === "section" && dropTarget.beforeSectionId === null
+                ? styles.tailActive
+                : ""
+            }`}
+            onDragOver={(e) => {
+              acceptDrop(e);
+              setDropTarget({ type: "section", beforeSectionId: null });
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleMoveSection(drag.sectionId, null);
+              setDrag(null);
+              setDropTarget(null);
+            }}
+          >
+            Move to the end
+          </div>
+        )}
 
         <div className={styles.sectionActions}>
           <button className={styles.ghostBtn} onClick={addSection}>

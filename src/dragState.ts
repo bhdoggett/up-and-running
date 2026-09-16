@@ -9,7 +9,8 @@ export type Drag =
 /** Where the item would land, so the UI can draw an insertion line. */
 export type DropTarget =
   | { type: "task"; sectionId: string; beforeTaskId: string | null }
-  | { type: "section"; beforeSectionId: string }
+  /** null means "after the last section" — the tail zone below the list. */
+  | { type: "section"; beforeSectionId: string | null }
   | null;
 
 /** Mark the event as a move so the cursor shows the right affordance. */

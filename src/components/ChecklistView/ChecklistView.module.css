@@ -186,6 +186,25 @@
   border-style: solid;
 }
 
+/* Drop zone that only exists mid-drag, giving the last slot a target. */
+.tailZone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  margin-bottom: 0.6rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text-faint);
+  font-size: 0.85rem;
+}
+.tailActive {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .sectionActions {
   display: flex;
   gap: 0.4rem;

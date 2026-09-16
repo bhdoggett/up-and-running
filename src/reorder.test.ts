@@ -121,4 +121,18 @@ describe("moveSection", () => {
   it("keeps each section's steps with it", () => {
     expect(shape(moveSection(fixture(), "B", "A"))).toBe("B[b1,b2] A[a1,a2,a3]");
   });
+
+  it("moves a middle section past the last one", () => {
+    // The UI had no target for "after the last section", so this position was
+    // unreachable by dragging even though the logic supported it.
+    const three = fixture();
+    three.sections.push({ id: "C", name: "C", collapsed: false, tasks: [] });
+    const out = moveSection(three, "B", null);
+    expect(out.sections.map((s) => s.id)).toEqual(["A", "C", "B"]);
+  });
+
+  it("leaves a section already last where it is", () => {
+    const out = moveSection(fixture(), "B", null);
+    expect(out.sections.map((s) => s.id)).toEqual(["A", "B"]);
+  });
 });
