@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import type { Checklist, Doc, FileUse, ItemKind, Selection } from "../../types";
@@ -19,7 +19,7 @@ interface Props {
   onRemoveFile: (id: string) => void;
   onOpenFile: (target: string) => void;
   onImport: () => void;
-  onAiImport: () => void;
+  onAiImport: (kind: ItemKind) => void;
   /** Current width in px (set by the draggable divider in App). */
   width: number;
 }
@@ -51,20 +51,24 @@ export default function Sidebar({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   // The menu is portalled to <body> with fixed coords: the sidebar's scroll
-  // container would otherwise clip it as soon as it reaches the edge.
-  const [menuAt, setMenuAt] = useState<{ top: number; left: number } | null>(null);
-  const importBtn = useRef<HTMLButtonElement>(null);
+  // container would otherwise clip it as soon as it reaches the edge. It
+  // remembers which group opened it, so the options stay scoped to that kind.
+  const [menu, setMenu] = useState<{
+    kind: ItemKind;
+    top: number;
+    left: number;
+  } | null>(null);
 
   const MENU_WIDTH = 210;
 
-  function toggleImportMenu() {
-    if (menuAt) {
-      setMenuAt(null);
+  function toggleImportMenu(e: React.MouseEvent<HTMLButtonElement>, kind: ItemKind) {
+    if (menu?.kind === kind) {
+      setMenu(null);
       return;
     }
-    const r = importBtn.current?.getBoundingClientRect();
-    if (!r) return;
-    setMenuAt({
+    const r = e.currentTarget.getBoundingClientRect();
+    setMenu({
+      kind,
       top: r.bottom + 6,
       // Keep it on screen if the sidebar is narrow or dragged wide.
       left: Math.min(r.left, window.innerWidth - MENU_WIDTH - 12),
@@ -101,19 +105,24 @@ export default function Sidebar({
         <div className={styles.listHead}>
           <span className={styles.listLabel}>{label}</span>
           <div className={styles.headBtns}>
-            {kind === "checklist" && (
-              <button
-                ref={importBtn}
-                className={styles.addBtn}
-                onClick={toggleImportMenu}
-                title="Import a checklist"
-                aria-label="Import checklist"
-              >
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 2v7M5 6.5L8 9.5l3-3M3 12v1.5h10V12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            )}
+            {/* Checklists arrive as files or from a document; docs only ever
+                come from a document, so that button skips the menu. */}
+            <button
+              className={styles.addBtn}
+              onClick={(e) =>
+                kind === "doc" ? onAiImport("doc") : toggleImportMenu(e, kind)
+              }
+              title={
+                kind === "doc"
+                  ? "Import a doc from a Word file or PDF"
+                  : "Import a checklist"
+              }
+              aria-label={`Import ${kind}`}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v7M5 6.5L8 9.5l3-3M3 12v1.5h10V12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
             <button className={styles.addBtn} onClick={onAdd} title={`New ${kind}`} aria-label={`New ${kind}`}>
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                 <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -257,33 +266,38 @@ export default function Sidebar({
         </ul>
       </div>
 
-      {menuAt &&
+      {menu &&
         createPortal(
           <>
-            <div className={styles.menuBackdrop} onClick={() => setMenuAt(null)} />
+            <div className={styles.menuBackdrop} onClick={() => setMenu(null)} />
             <div
               className={styles.menu}
-              style={{ top: menuAt.top, left: menuAt.left, width: MENU_WIDTH }}
+              style={{ top: menu.top, left: menu.left, width: MENU_WIDTH }}
             >
               <button
                 className={styles.menuItem}
                 onClick={() => {
-                  setMenuAt(null);
+                  setMenu(null);
                   onImport();
                 }}
               >
-                <strong>From a checklist file</strong>
+                <strong>From a {menu.kind} file</strong>
                 <span>.uar or exported .html</span>
               </button>
               <button
                 className={styles.menuItem}
                 onClick={() => {
-                  setMenuAt(null);
-                  onAiImport();
+                  const kind = menu.kind;
+                  setMenu(null);
+                  onAiImport(kind);
                 }}
               >
                 <strong>From a document (AI)</strong>
-                <span>Word doc, PDF, or notes</span>
+                <span>
+                  {menu.kind === "checklist"
+                    ? "Word doc or PDF → steps"
+                    : "Word doc or PDF → a reference page"}
+                </span>
               </button>
             </div>
           </>,

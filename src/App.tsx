@@ -29,7 +29,7 @@ export default function App() {
     return saved ? clampWidth(saved) : 260;
   });
   const dragging = useRef(false);
-  const [aiImportOpen, setAiImportOpen] = useState(false);
+  const [aiImportKind, setAiImportKind] = useState<ItemKind | null>(null);
 
   // Drag the divider to resize the sidebar; the width persists across launches.
   useEffect(() => {
@@ -260,7 +260,7 @@ export default function App() {
         onRename={rename}
         onDelete={remove}
         onImport={importChecklist}
-        onAiImport={() => setAiImportOpen(true)}
+        onAiImport={(kind) => setAiImportKind(kind)}
         width={sidebarWidth}
       />
       <div
@@ -287,12 +287,13 @@ export default function App() {
         </div>
       )}
 
-      {aiImportOpen && (
+      {aiImportKind && (
         <AiImportDialog
-          onClose={() => setAiImportOpen(false)}
+          kind={aiImportKind}
+          onClose={() => setAiImportKind(null)}
           onImported={(item) => {
             addImportedItem(item);
-            setAiImportOpen(false);
+            setAiImportKind(null);
           }}
         />
       )}

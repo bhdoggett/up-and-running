@@ -4,6 +4,8 @@ import { importItemFromJson, type ImportedItem } from "../../importFile";
 import styles from "./AiImportDialog.module.css";
 
 interface Props {
+  /** Chosen by which sidebar group opened this, so the dialog doesn't re-ask. */
+  kind: PromptKind;
   onImported: (item: ImportedItem) => void;
   onClose: () => void;
 }
@@ -11,12 +13,11 @@ interface Props {
 // Guides the user through converting an existing document into a checklist with
 // any LLM: take the prompt, paste it plus their document into the chat, then
 // paste the JSON answer back here.
-export default function AiImportDialog({ onImported, onClose }: Props) {
+export default function AiImportDialog({ kind, onImported, onClose }: Props) {
   const [json, setJson] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [kind, setKind] = useState<PromptKind>("checklist");
 
   async function handleCopy() {
     const ok = await copyPromptToClipboard(kind);
@@ -53,42 +54,20 @@ export default function AiImportDialog({ onImported, onClose }: Props) {
     <div className={styles.backdrop} onClick={onClose}>
       <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
         <div className={styles.head}>
-          <h2 className={styles.title}>Import from a document</h2>
+          <h2 className={styles.title}>
+            {kind === "doc" ? "Import a reference doc" : "Import a checklist"}
+          </h2>
           <p className={styles.sub}>
-            Turn a Word doc, PDF, or notes into a checklist or reference doc
-            using any AI chat — no account setup needed here.
+            {kind === "doc"
+              ? "Turn a Word doc, PDF, or notes into a reference page, keeping the original wording and layout."
+              : "Turn a Word doc, PDF, or notes into steps you can work through."}{" "}
+            Uses any AI chat — no account setup needed here.
           </p>
         </div>
 
         <div className={styles.body}>
           <div className={styles.step}>
             <span className={styles.num}>1</span>
-            <div className={styles.stepBody}>
-              <div className={styles.stepTitle}>What are you converting?</div>
-              <div className={styles.btnRow}>
-                <button
-                  className={`${styles.btn} ${kind === "checklist" ? styles.chosen : ""}`}
-                  onClick={() => setKind("checklist")}
-                >
-                  A checklist
-                </button>
-                <button
-                  className={`${styles.btn} ${kind === "doc" ? styles.chosen : ""}`}
-                  onClick={() => setKind("doc")}
-                >
-                  A reference doc
-                </button>
-              </div>
-              <p className={styles.stepText} style={{ marginTop: "0.45rem" }}>
-                {kind === "checklist"
-                  ? "Steps to work through — becomes a checklist with sections."
-                  : "Explains how something works — keeps the original wording and layout as Markdown."}
-              </p>
-            </div>
-          </div>
-
-          <div className={styles.step}>
-            <span className={styles.num}>2</span>
             <div className={styles.stepBody}>
               <div className={styles.stepTitle}>Get the conversion prompt</div>
               <p className={styles.stepText}>
@@ -107,7 +86,7 @@ export default function AiImportDialog({ onImported, onClose }: Props) {
           </div>
 
           <div className={styles.step}>
-            <span className={styles.num}>3</span>
+            <span className={styles.num}>2</span>
             <div className={styles.stepBody}>
               <div className={styles.stepTitle}>Paste it into an AI chat</div>
               <p className={styles.stepText}>
@@ -118,7 +97,7 @@ export default function AiImportDialog({ onImported, onClose }: Props) {
           </div>
 
           <div className={styles.step}>
-            <span className={styles.num}>4</span>
+            <span className={styles.num}>3</span>
             <div className={styles.stepBody}>
               <div className={styles.stepTitle}>Paste the answer back here</div>
               <p className={styles.stepText}>
