@@ -115,58 +115,53 @@ export default function App() {
   // has to be expanded first. Listeners sit on the window rather than on a
   // particular list: the pointer can be anywhere when the drag begins.
   const [fileDrag, setFileDrag] = useState(false);
-  const dragDepth = useRef(0);
+  const dragIdle = useRef<number | null>(null);
 
   useEffect(() => {
     const carriesFiles = (e: DragEvent) =>
       Array.from(e.dataTransfer?.types ?? []).includes("Files");
 
-    function onEnter(e: DragEvent) {
-      if (!carriesFiles(e)) return;
-      dragDepth.current += 1;
-      setFileDrag(true);
+    function clear() {
+      if (dragIdle.current) window.clearTimeout(dragIdle.current);
+      dragIdle.current = null;
+      setFileDrag(false);
     }
+
+    /**
+     * dragover repeats for as long as a drag is over the window, so the drag
+     * is "still happening" if one arrived recently. Counting dragenter against
+     * dragleave instead left the zones stuck open: for a drag from Finder the
+     * two don't reliably balance, and dragend never fires at all.
+     */
     function onOver(e: DragEvent) {
       if (!carriesFiles(e)) return;
       // Without this the webview treats the drop as "open that file".
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      setFileDrag(true);
+      if (dragIdle.current) window.clearTimeout(dragIdle.current);
+      dragIdle.current = window.setTimeout(clear, 200);
     }
-    function onLeave(e: DragEvent) {
-      if (!carriesFiles(e)) return;
-      // dragleave fires crossing every child, so count in and out instead.
-      dragDepth.current = Math.max(0, dragDepth.current - 1);
-      if (dragDepth.current === 0) setFileDrag(false);
-    }
+
     function onDrop(e: DragEvent) {
-      if (!carriesFiles(e)) return;
-      // A Resources area that took the drop stopped it before here; anything
-      // reaching the window was dropped on nothing, so only clear the state.
-      e.preventDefault();
-      dragDepth.current = 0;
-      setFileDrag(false);
+      // A Resources area may have handled it already; either way the drag is
+      // over, so stop showing the zones.
+      if (carriesFiles(e)) e.preventDefault();
+      clear();
     }
 
-    // A drag that ends outside the window, or is cancelled, never produces a
-    // drop — without this the zones would stay up.
-    function onEnd() {
-      dragDepth.current = 0;
-      setFileDrag(false);
-    }
-
-    window.addEventListener("dragenter", onEnter);
     window.addEventListener("dragover", onOver);
-    window.addEventListener("dragleave", onLeave);
     window.addEventListener("drop", onDrop);
-    window.addEventListener("dragend", onEnd);
+    window.addEventListener("dragend", clear);
+    window.addEventListener("blur", clear);
     return () => {
-      window.removeEventListener("dragenter", onEnter);
       window.removeEventListener("dragover", onOver);
-      window.removeEventListener("dragleave", onLeave);
       window.removeEventListener("drop", onDrop);
-      window.removeEventListener("dragend", onEnd);
+      window.removeEventListener("dragend", clear);
+      window.removeEventListener("blur", clear);
+      if (dragIdle.current) window.clearTimeout(dragIdle.current);
     };
-  });
+  }, []);
 
   if (!state) {
     return <div className={styles.loading}>Loading…</div>;
