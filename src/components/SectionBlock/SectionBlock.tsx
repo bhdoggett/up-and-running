@@ -10,6 +10,8 @@ interface Props {
   section: Section;
   /** An unnamed lone section renders headerless, like a plain list. */
   showHeader: boolean;
+  /** Last section in the checklist — enables the "drop below to append" half. */
+  isLast: boolean;
   onChange: (section: Section) => void;
   onDelete: () => void;
   drag: Drag;
@@ -28,6 +30,7 @@ interface Props {
 export default function SectionBlock({
   section,
   showHeader,
+  isLast,
   onChange,
   onDelete,
   drag,
@@ -101,6 +104,17 @@ export default function SectionBlock({
 
   const draggingThisSection = drag?.type === "section" && drag.sectionId === section.id;
 
+  /**
+   * Where a section dropped on this header should land. Below the midpoint of
+   * the last header means "after it" (null), so dragging downwards past the
+   * end does the obvious thing instead of doing nothing.
+   */
+  function sectionTargetAt(e: React.DragEvent): string | null {
+    if (!isLast) return section.id;
+    const box = e.currentTarget.getBoundingClientRect();
+    return e.clientY > box.top + box.height / 2 ? null : section.id;
+  }
+
   // One handler for the whole list: work out the insertion point from the
   // pointer's position against each card's midpoint. Hit-testing individual
   // cards made the indicator flicker whenever the pointer crossed a gap.
@@ -156,19 +170,17 @@ export default function SectionBlock({
         <div
           className={styles.head}
           onDragOver={(e) => {
-            if (drag?.type === "section") {
-              acceptDrop(e);
-              setDropTarget({ type: "section", beforeSectionId: section.id });
-            }
+            if (drag?.type !== "section") return;
+            acceptDrop(e);
+            setDropTarget({ type: "section", beforeSectionId: sectionTargetAt(e) });
           }}
           onDrop={(e) => {
-            if (drag?.type === "section") {
-              e.preventDefault();
-              e.stopPropagation();
-              onMoveSection(drag.sectionId, section.id);
-              setDrag(null);
-              setDropTarget(null);
-            }
+            if (drag?.type !== "section") return;
+            e.preventDefault();
+            e.stopPropagation();
+            onMoveSection(drag.sectionId, sectionTargetAt(e));
+            setDrag(null);
+            setDropTarget(null);
           }}
         >
           {editingName ? (

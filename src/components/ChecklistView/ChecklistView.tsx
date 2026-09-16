@@ -234,11 +234,12 @@ export default function ChecklistView({ checklist, onChange }: Props) {
           )
         )}
 
-        {checklist.sections.map((section) => (
+        {checklist.sections.map((section, index) => (
           <SectionBlock
             key={section.id}
             section={section}
             showHeader={showHeaders}
+            isLast={index === checklist.sections.length - 1}
             onChange={updateSection}
             onDelete={() => deleteSection(section.id)}
             drag={drag}
@@ -251,29 +252,33 @@ export default function ChecklistView({ checklist, onChange }: Props) {
         ))}
 
         {/* Without this, the last position is unreachable: every other drop
-            target inserts *before* a section. */}
-        {drag?.type === "section" && (
-          <div
-            className={`${styles.tailZone} ${
-              dropTarget?.type === "section" && dropTarget.beforeSectionId === null
-                ? styles.tailActive
-                : ""
-            }`}
-            onDragOver={(e) => {
-              acceptDrop(e);
-              setDropTarget({ type: "section", beforeSectionId: null });
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleMoveSection(drag.sectionId, null);
-              setDrag(null);
-              setDropTarget(null);
-            }}
-          >
-            Move to the end
-          </div>
-        )}
+            target inserts *before* a section. It is always in the DOM — a zone
+            created mid-drag isn't reliably registered as a drop target — and
+            only takes up space while a section is in flight. */}
+        <div
+          className={[
+            styles.tailZone,
+            drag?.type === "section" ? styles.tailReady : "",
+            dropTarget?.type === "section" && dropTarget.beforeSectionId === null
+              ? styles.tailActive
+              : "",
+          ].join(" ")}
+          onDragOver={(e) => {
+            if (drag?.type !== "section") return;
+            acceptDrop(e);
+            setDropTarget({ type: "section", beforeSectionId: null });
+          }}
+          onDrop={(e) => {
+            if (drag?.type !== "section") return;
+            e.preventDefault();
+            e.stopPropagation();
+            handleMoveSection(drag.sectionId, null);
+            setDrag(null);
+            setDropTarget(null);
+          }}
+        >
+          Move to the end
+        </div>
 
         <div className={styles.sectionActions}>
           <button className={styles.ghostBtn} onClick={addSection}>

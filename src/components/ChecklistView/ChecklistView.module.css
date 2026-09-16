@@ -186,17 +186,24 @@
   border-style: solid;
 }
 
-/* Drop zone that only exists mid-drag, giving the last slot a target. */
+/* Always present so the browser registers it as a drop target; it only becomes
+   visible and takes up space once a section is being dragged. */
 .tailZone {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 3rem;
-  margin-bottom: 0.6rem;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius);
   color: var(--text-faint);
   font-size: 0.85rem;
+}
+.tailReady {
+  height: 3rem;
+  opacity: 1;
+  margin-bottom: 0.6rem;
 }
 .tailActive {
   border-style: solid;
