@@ -58,7 +58,7 @@ async function restoreResource(r: Resource, dir: string | null): Promise<Resourc
 // Turn validated raw data into a new, ready-to-use checklist: fresh ids,
 // progress reset, bundled attachments written back to disk. Shared by every
 // import path (file, pasted JSON, AI-assisted).
-export async function buildImportedChecklist(raw: unknown): Promise<Checklist> {
+async function buildImportedChecklist(raw: unknown): Promise<Checklist> {
   // withSections also accepts the older flat-`tasks` shape, so exports from
   // before sections (and LLM output using either form) import cleanly.
   const checklist = withSections(asChecklist(raw));

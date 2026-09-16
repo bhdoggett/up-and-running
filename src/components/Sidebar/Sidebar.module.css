@@ -23,11 +23,6 @@
   color: transparent;
   width: fit-content;
 }
-.brandSub {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-top: 0.15rem;
-}
 
 /* Project switcher: which event's material the lists below belong to. */
 .projectRow {

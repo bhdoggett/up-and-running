@@ -4,7 +4,7 @@ import { writeTextFile } from "@tauri-apps/plugin-fs";
 // A self-contained prompt the user pastes into any LLM (claude.ai, etc.) along
 // with their existing checklist — a Word doc, a printout, notes from another
 // app. The model returns .uar JSON, which the app validates and imports.
-export const CONVERSION_PROMPT = `You convert existing checklists into the "Up and Running" checklist format.
+const CONVERSION_PROMPT = `You convert existing checklists into the "Up and Running" checklist format.
 
 I will give you the contents of a checklist — it may come from a Word document, a
 PDF, an email, notes, or another checklist app. Convert it into a single JSON
@@ -90,7 +90,7 @@ Paste your checklist below this line, then send.
 `;
 
 // The doc equivalent: keep the source document's structure, but as Markdown.
-export const DOC_CONVERSION_PROMPT = `You convert reference documents into the "Up and Running" doc format.
+const DOC_CONVERSION_PROMPT = `You convert reference documents into the "Up and Running" doc format.
 
 I will give you the contents of a document — a Word file, a PDF, a printout, or
 notes. It explains how something works; it is NOT a step-by-step checklist.

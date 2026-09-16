@@ -45,9 +45,10 @@ export function localAttachments(checklist: Checklist): Resource[] {
   return all.filter((r) => r.kind === "file" && isLocalPath(r.target));
 }
 
-export async function totalAttachmentBytes(checklist: Checklist): Promise<number> {
+/** Total size on disk, skipping anything that can't be read. */
+async function sumSizes(resources: Resource[]): Promise<number> {
   const sizes = await Promise.all(
-    localAttachments(checklist).map(async (r) => {
+    resources.map(async (r) => {
       try {
         return (await stat(r.target)).size;
       } catch {
@@ -56,6 +57,10 @@ export async function totalAttachmentBytes(checklist: Checklist): Promise<number
     }),
   );
   return sizes.reduce((a, b) => a + b, 0);
+}
+
+export function totalAttachmentBytes(checklist: Checklist): Promise<number> {
+  return sumSizes(localAttachments(checklist));
 }
 
 export function formatBytes(n: number): string {
@@ -92,7 +97,7 @@ async function toDataUri(path: string): Promise<string | null> {
 // Return a deep copy of the checklist where every local image referenced in a
 // task's Markdown is replaced with an inline base64 data URI. This makes the
 // exported file (HTML or .uar) fully self-contained and portable to any machine.
-export async function embedLocalImages(checklist: Checklist): Promise<Checklist> {
+async function embedLocalImages(checklist: Checklist): Promise<Checklist> {
   // Collect unique local image paths across all tasks.
   const paths = new Set<string>();
   for (const task of allTasks(checklist)) {
@@ -162,17 +167,8 @@ export function localDocAttachments(doc: Doc): Resource[] {
   return doc.resources.filter((r) => r.kind === "file" && isLocalPath(r.target));
 }
 
-export async function totalDocAttachmentBytes(doc: Doc): Promise<number> {
-  const sizes = await Promise.all(
-    localDocAttachments(doc).map(async (r) => {
-      try {
-        return (await stat(r.target)).size;
-      } catch {
-        return 0;
-      }
-    }),
-  );
-  return sizes.reduce((a, b) => a + b, 0);
+export function totalDocAttachmentBytes(doc: Doc): Promise<number> {
+  return sumSizes(localDocAttachments(doc));
 }
 
 // Same treatment as a checklist: inline images in the body, optionally bundle
@@ -216,17 +212,8 @@ export function localProjectAttachments(project: Project): Resource[] {
   ].filter((r) => r.kind === "file" && isLocalPath(r.target));
 }
 
-export async function totalProjectAttachmentBytes(project: Project): Promise<number> {
-  const sizes = await Promise.all(
-    localProjectAttachments(project).map(async (r) => {
-      try {
-        return (await stat(r.target)).size;
-      } catch {
-        return 0;
-      }
-    }),
-  );
-  return sizes.reduce((a, b) => a + b, 0);
+export function totalProjectAttachmentBytes(project: Project): Promise<number> {
+  return sumSizes(localProjectAttachments(project));
 }
 
 // The whole project made portable: images inlined everywhere, attachments

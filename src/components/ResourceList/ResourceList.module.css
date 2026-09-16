@@ -94,10 +94,6 @@
 .chipLink:hover {
   color: var(--accent-hover);
 }
-.chipIcon {
-  color: var(--text-faint);
-  flex: none;
-}
 .remove {
   flex: none;
   background: none;
@@ -248,13 +244,6 @@
 .remove:hover {
   color: var(--danger);
   background: var(--danger-soft);
-}
-
-.addRow {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  align-items: center;
 }
 .input {
   border: 1px solid var(--border-strong);

@@ -124,12 +124,6 @@
   background: var(--bg);
   border-color: var(--border);
 }
-.iconBtn.danger:hover {
-  color: var(--danger);
-  border-color: transparent;
-  background: var(--danger-soft);
-}
-
 .body {
   padding: 0 0.95rem 0.95rem 3rem;
 }
@@ -178,23 +172,17 @@
   flex-direction: column;
   gap: 0.6rem;
 }
-.input,
-.textarea {
+.input {
   width: 100%;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.6rem;
   background: var(--surface);
 }
-.input:focus,
-.textarea:focus {
+.input:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
-}
-.textarea {
-  min-height: 4.5rem;
-  resize: vertical;
 }
 .label {
   font-size: 0.78rem;
@@ -202,35 +190,6 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-}
-
-.resEditRow {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-.resEditRow .input {
-  flex: 1;
-}
-.addRow {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-.smallBtn {
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  padding: 0.35rem 0.7rem;
-  color: var(--text);
-  font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-.smallBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
 }
 .editActions {
   display: flex;

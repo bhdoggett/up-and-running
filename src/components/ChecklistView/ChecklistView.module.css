@@ -109,51 +109,6 @@
   color: var(--accent);
 }
 
-.exportWrap {
-  position: relative;
-  flex: none;
-}
-.menuBackdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-}
-.menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
-  z-index: 11;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-md);
-  padding: 0.3rem;
-  width: 240px;
-}
-.menuItem {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 0.6rem;
-  color: var(--text);
-}
-.menuItem strong {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-.menuItem span {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-.menuItem:hover {
-  background: var(--accent-soft);
-}
-
 /* Optional intro above the steps. */
 .description {
   position: relative;
@@ -231,15 +186,6 @@
   border-style: solid;
 }
 
-.list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
 .sectionActions {
   display: flex;
   gap: 0.4rem;
@@ -261,41 +207,6 @@
   border-color: var(--accent);
 }
 
-.addTask {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-.addInput {
-  flex: 1;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-sm);
-  padding: 0.65rem 0.8rem;
-  background: transparent;
-}
-.addInput:focus {
-  outline: none;
-  border-style: solid;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-}
-.addBtn {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: #fff;
-  border-radius: var(--radius-sm);
-  padding: 0 1rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-.addBtn:hover {
-  background: var(--accent-hover);
-}
-.addBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .toast {
   position: fixed;
   bottom: 1.2rem;
@@ -308,15 +219,4 @@
   font-size: 0.85rem;
   box-shadow: var(--shadow-md);
   max-width: 90%;
-}
-
-.emptyState {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 3rem 1rem;
-}
-.emptyState h2 {
-  color: var(--text);
-  font-size: 1.2rem;
-  margin: 0 0 0.4rem;
 }

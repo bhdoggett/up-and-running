@@ -128,7 +128,7 @@ function renderSections(checklist: Checklist): string {
 // Build a single self-contained HTML document. It renders the checklist read-only
 // (interactive checkboxes saved in the viewer's browser) AND embeds the full
 // checklist JSON in a <script> tag so the desktop app can re-import it.
-export function renderChecklistHtml(checklist: Checklist): string {
+function renderChecklistHtml(checklist: Checklist): string {
   const storageKey = `up-and-running:${checklist.id}`;
   const stepCount = allTasks(checklist).length;
   // Embed the data payload for round-tripping. Escape "<" so "</script>" in any
@@ -283,7 +283,7 @@ export function renderChecklistHtml(checklist: Checklist): string {
 
 // A reference doc as a standalone page: same styling as the checklist export,
 // with the Markdown body rendered and the doc JSON embedded for re-import.
-export function renderDocHtml(doc: Doc): string {
+function renderDocHtml(doc: Doc): string {
   const payload = JSON.stringify({ ...doc, itemKind: "doc" }).replace(/</g, "\\u003c");
   return `<!doctype html>
 <html lang="en">
