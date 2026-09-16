@@ -190,7 +190,8 @@ export async function importItemFromJson(text: string): Promise<ImportedItem> {
   return { kind: "checklist", checklist: await buildImportedChecklist(raw) };
 }
 
-function parseLooseJson(text: string): unknown {
+/** Exported for tests: the tolerant parser behind pasted AI output. */
+export function parseLooseJson(text: string): unknown {
   const trimmed = text.trim();
   if (!trimmed) throw new Error("Nothing pasted yet.");
 

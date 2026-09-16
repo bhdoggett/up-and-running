@@ -234,11 +234,6 @@ export default function SectionBlock({
                 </svg>
                 <span className={styles.name}>{section.name}</span>
               </button>
-              <span
-                className={`${styles.count} ${total > 0 && done === total ? styles.complete : ""}`}
-              >
-                {done}/{total}
-              </span>
               <button
                 className={styles.iconBtn}
                 onClick={startRename}
@@ -259,6 +254,12 @@ export default function SectionBlock({
                   <path d="M3 4h10M6.5 4V3h3v1M4.5 4l.5 9h6l.5-9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
+              {/* Last in the row so it sits flush right, clear of the controls. */}
+              <span
+                className={`${styles.count} ${total > 0 && done === total ? styles.complete : ""}`}
+              >
+                {done}/{total}
+              </span>
             </>
           )}
         </div>
