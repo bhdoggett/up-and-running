@@ -269,13 +269,10 @@ export default function TaskItem({
             />
           </div>
 
-          <div>
-            <div className={styles.label}>Links, files &amp; related items</div>
-            <ResourceList
-              resources={task.resources}
-              onChange={(resources) => patch({ resources })}
-            />
-          </div>
+          <ResourceList
+            resources={task.resources}
+            onChange={(resources) => patch({ resources })}
+          />
 
           <div className={styles.editActions}>
             <button className={styles.primaryBtn} onClick={() => setEditing(false)}>
