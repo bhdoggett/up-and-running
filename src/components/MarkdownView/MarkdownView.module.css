@@ -13,10 +13,14 @@
 }
 .prose h1,
 .prose h2,
-.prose h3 {
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
   color: var(--text);
   line-height: 1.3;
   margin: 1rem 0 0.4rem;
+  font-weight: 700;
 }
 .prose h1 {
   font-size: 1.15rem;
@@ -26,6 +30,17 @@
 }
 .prose h3 {
   font-size: 0.97rem;
+}
+/* Deeper levels stop shrinking and lean on colour/case to stay legible. */
+.prose h4 {
+  font-size: 0.92rem;
+}
+.prose h5,
+.prose h6 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
 }
 .prose p {
   margin: 0.5rem 0;

@@ -190,8 +190,10 @@ export function renderChecklistHtml(checklist: Checklist): string {
   /* Markdown prose */
   .export-prose { margin: .6rem 0 0 1.85rem; color: #374151; }
   .export-prose > :first-child { margin-top: 0; }
-  .export-prose h1, .export-prose h2, .export-prose h3 { color: #1c1f23; line-height: 1.3; margin: 1rem 0 .4rem; }
+  .export-prose h1, .export-prose h2, .export-prose h3, .export-prose h4, .export-prose h5, .export-prose h6 { color: #1c1f23; line-height: 1.3; font-weight: 700; margin: 1rem 0 .4rem; }
   .export-prose h1 { font-size: 1.2rem; } .export-prose h2 { font-size: 1.08rem; } .export-prose h3 { font-size: 1rem; }
+  .export-prose h4 { font-size: .95rem; }
+  .export-prose h5, .export-prose h6 { font-size: .87rem; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
   .export-prose p { margin: .5rem 0; }
   .export-prose ul, .export-prose ol { margin: .5rem 0; padding-left: 1.4rem; }
   .export-prose li { margin: .2rem 0; }
@@ -215,7 +217,8 @@ export function renderChecklistHtml(checklist: Checklist): string {
     .section-count { background: #1f2226; border-color: #33373d; }
     .sub, .file-note { color: #8b929c; }
     .export-prose { color: #c3c7cd; }
-    .export-prose h1, .export-prose h2, .export-prose h3 { color: #e7e9ea; }
+    .export-prose h1, .export-prose h2, .export-prose h3, .export-prose h4 { color: #e7e9ea; }
+    .export-prose h5, .export-prose h6 { color: #8b929c; }
     .export-prose code, .export-prose pre { background: #2a2e34; }
     .reset { border-color: #3a3f46; color: #9aa0a8; }
   }
@@ -307,8 +310,10 @@ export function renderDocHtml(doc: Doc): string {
   .file-note { color: #9ca3af; font-size: .82rem; }
   .export-prose { color: #374151; }
   .export-prose > :first-child { margin-top: 0; }
-  .export-prose h1, .export-prose h2, .export-prose h3 { color: #1c1f23; line-height: 1.3; margin: 1.1rem 0 .4rem; }
+  .export-prose h1, .export-prose h2, .export-prose h3, .export-prose h4, .export-prose h5, .export-prose h6 { color: #1c1f23; line-height: 1.3; font-weight: 700; margin: 1.1rem 0 .4rem; }
   .export-prose h1 { font-size: 1.2rem; } .export-prose h2 { font-size: 1.08rem; } .export-prose h3 { font-size: 1rem; }
+  .export-prose h4 { font-size: .95rem; }
+  .export-prose h5, .export-prose h6 { font-size: .87rem; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
   .export-prose p { margin: .5rem 0; }
   .export-prose ul, .export-prose ol { margin: .5rem 0; padding-left: 1.4rem; }
   .export-prose li { margin: .2rem 0; }
@@ -327,7 +332,8 @@ export function renderDocHtml(doc: Doc): string {
     .card, .overview { background: #1f2226; border-color: #33373d; }
     .sub, .overview-label, .file-note { color: #8b929c; }
     .export-prose { color: #c3c7cd; }
-    .export-prose h1, .export-prose h2, .export-prose h3 { color: #e7e9ea; }
+    .export-prose h1, .export-prose h2, .export-prose h3, .export-prose h4 { color: #e7e9ea; }
+    .export-prose h5, .export-prose h6 { color: #8b929c; }
     .export-prose code, .export-prose pre { background: #2a2e34; }
   }
 </style>
