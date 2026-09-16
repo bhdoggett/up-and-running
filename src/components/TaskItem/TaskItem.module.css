@@ -186,7 +186,7 @@
   background: var(--panel);
   border-color: var(--rule);
 }
-/* Editor open: the tool is switched on. Amber is the app.s "active", kept
+/* Editor open: the tool is switched on. Amber is the app's "active", kept
    clear of green, which only ever means the step is done. */
 .iconBtnActive,
 .iconBtnActive:hover {

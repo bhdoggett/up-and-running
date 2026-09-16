@@ -3,6 +3,8 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import type { Resource, ResourceKind } from "../../types";
 import { newId } from "../../types";
 import { openLink, normalizeTarget } from "../../appLinks";
+import { hashBytes } from "../../attachments";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { useLibrary, useResourceLabel, isInternal } from "../../library";
 import styles from "./ResourceList.module.css";
 
@@ -18,7 +20,7 @@ type RowKind = "web" | "file" | "item";
 const ROWS: { key: RowKind; label: string; addLabel: string }[] = [
   { key: "web", label: "Links:", addLabel: "+ Link" },
   { key: "file", label: "Files:", addLabel: "+ File" },
-  { key: "item", label: "In app:", addLabel: "+ Doc or checklist" },
+  { key: "item", label: "Docs:", addLabel: "+ Doc" },
 ];
 
 function rowOf(kind: ResourceKind): RowKind {
@@ -30,8 +32,15 @@ export default function ResourceList({
   onChange,
   showLinkedItems = true,
 }: Props) {
-  const { checklists, docs, currentId, navigate, fileDrag, attachFiles } = useLibrary();
+  const { docs, currentId, navigate, fileDrag, attachFiles } = useLibrary();
   const [over, setOver] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  /** Say something briefly in the row itself, rather than in a dialog. */
+  function say(text: string) {
+    setNotice(text);
+    window.setTimeout(() => setNotice(null), 2500);
+  }
   const labelFor = useResourceLabel();
   const [editingRow, setEditingRow] = useState<RowKind | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -66,20 +75,40 @@ export default function ResourceList({
     return resources.some((r) => r.kind === kind && r.target === target);
   }
 
+  /** Same path, or the same contents arrived at by a different route. */
+  function alreadyAttached(target: string, hash?: string): boolean {
+    return resources.some(
+      (r) => r.kind === "file" && (r.target === target || (!!hash && r.hash === hash)),
+    );
+  }
+
   async function addFile() {
     const selected = await openDialog({
       title: "Choose a file",
       multiple: false,
     });
     if (typeof selected !== "string") return;
-    if (alreadyLinked("file", selected)) {
-      setEditingRow("file"); // already here — show the list rather than duplicate
+
+    // Identify it by contents, not path: the same file dropped in earlier was
+    // copied into the app and so carries a different path entirely.
+    let hash: string | undefined;
+    try {
+      hash = await hashBytes(await readFile(selected));
+    } catch (e) {
+      console.error("Could not read the chosen file", e);
+    }
+
+    if (alreadyAttached(selected, hash)) {
+      // Silently doing nothing reads as a broken button; say why.
+      say("That file is already here");
+      setEditingRow("file");
       return;
     }
+
     const fallback = selected.split(/[\\/]/).pop() || selected;
     onChange([
       ...resources,
-      { id: newId(), label: fallback, kind: "file", target: selected },
+      { id: newId(), label: fallback, kind: "file", target: selected, hash },
     ]);
   }
 
@@ -90,12 +119,9 @@ export default function ResourceList({
     onChange([...resources, { id: newId(), label: "", kind, target: id }]);
   }
 
-  // Only offer items that aren't this one and aren't already linked.
+  // Only offer docs that are neither this one nor already linked.
   const linkableDocs = docs.filter(
     (d) => d.id !== currentId && !alreadyLinked("doc", d.id),
-  );
-  const linkableChecklists = checklists.filter(
-    (c) => c.id !== currentId && !alreadyLinked("checklist", c.id),
   );
 
   function renderRow(row: (typeof ROWS)[number]) {
@@ -182,6 +208,10 @@ export default function ResourceList({
             </ul>
           )}
 
+          {notice && row.key === "file" && (
+            <span className={styles.notice}>{notice}</span>
+          )}
+
           {editing ? (
             <div className={styles.editActions}>
               <button className={styles.smallBtn} onClick={add}>
@@ -212,26 +242,12 @@ export default function ResourceList({
             <>
               <div className={styles.menuBackdrop} onClick={() => setPickerOpen(false)} />
               <div className={styles.picker}>
-                <div className={styles.pickerLabel}>Docs</div>
                 {linkableDocs.length === 0 && (
-                  <div className={styles.pickerEmpty}>Nothing left to link</div>
+                  <div className={styles.pickerEmpty}>No docs to link</div>
                 )}
                 {linkableDocs.map((d) => (
                   <button key={d.id} className={styles.pickerItem} onClick={() => addItem("doc", d.id)}>
                     {d.name}
-                  </button>
-                ))}
-                <div className={styles.pickerLabel}>Checklists</div>
-                {linkableChecklists.length === 0 && (
-                  <div className={styles.pickerEmpty}>Nothing left to link</div>
-                )}
-                {linkableChecklists.map((c) => (
-                  <button
-                    key={c.id}
-                    className={styles.pickerItem}
-                    onClick={() => addItem("checklist", c.id)}
-                  >
-                    {c.name}
                   </button>
                 ))}
               </div>
@@ -262,7 +278,17 @@ export default function ResourceList({
             // every drop zone on screen afterwards.
             setOver(false);
             const added = await attachFiles(e.dataTransfer.files);
-            if (added.length) onChange([...resources, ...added]);
+            // The same file dropped here twice is one attachment, not two.
+            const fresh = added.filter((r) => !alreadyAttached(r.target, r.hash));
+            if (fresh.length) {
+              onChange([...resources, ...fresh]);
+            } else if (added.length) {
+              say(
+                added.length === 1
+                  ? "That file is already here"
+                  : "Those files are already here",
+              );
+            }
           }}
         >
           Drop files here

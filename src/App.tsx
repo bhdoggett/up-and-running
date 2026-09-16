@@ -12,7 +12,7 @@ import { newId, allFiles } from "./types";
 import { loadState, saveState } from "./storage";
 import { importItemFromFile, type ImportedItem } from "./importFile";
 import { openLink } from "./appLinks";
-import { safeAttachmentName } from "./attachments";
+import { contentAddressedName } from "./attachments";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { mkdir, writeFile } from "@tauri-apps/plugin-fs";
 import { exportProjectToUar } from "./exportHtml";
@@ -363,7 +363,10 @@ export default function App() {
       const added: Resource[] = [];
       for (const file of Array.from(list)) {
         const bytes = new Uint8Array(await file.arrayBuffer());
-        const dest = await join(dir, `${newId()}-${safeAttachmentName(file.name)}`);
+        // Named by content, so the same file always resolves to one path —
+        // attaching it in a second place points at the copy already stored
+        // rather than making another. Rewriting identical bytes is harmless.
+        const dest = await join(dir, await contentAddressedName(bytes, file.name));
         await writeFile(dest, bytes);
         added.push({ id: newId(), label: file.name, kind: "file", target: dest });
       }

@@ -18,6 +18,12 @@ export interface Resource {
    */
   target: string;
   /**
+   * For "file": a hash of the contents, so the same file added twice — once
+   * through the picker, once by dropping it — is recognised as one file even
+   * though the two routes produce different paths.
+   */
+  hash?: string;
+  /**
    * Set only inside an export: a base64 data: URI holding the attachment's bytes
    * so it travels with the file. On import it's written back to disk and cleared.
    */

@@ -19,7 +19,7 @@
   gap: 0.45rem;
   min-width: 0;
 }
-/* Markdown.s heading marker, set as a glyph so it reads as a mark rather
+/* Markdown's heading marker, set as a glyph so it reads as a mark rather
    than as stray syntax in front of the name. */
 .mark {
   flex: none;
