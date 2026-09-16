@@ -271,23 +271,21 @@ export default function SectionBlock({
                   </svg>
                 </button>
               </div>
-              {/* Deleting a section takes its steps with it, so it is only
-                  offered once you have deliberately opened the name for
-                  editing — not sitting in the row waiting to be mis-clicked. */}
-              {editingName && (
-                <button
-                  className={styles.deleteBtn}
-                  // The input's blur would close the editor before the click
-                  // landed, so commit on mousedown instead.
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    requestDelete();
-                  }}
-                  title="Delete this section and its steps"
-                >
-                  Delete section
-                </button>
-              )}
+              <button
+                className={`${styles.iconBtn} ${styles.danger}`}
+                // The rename field's blur would remove this button before a
+                // click could land, so act on mousedown.
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  requestDelete();
+                }}
+                title="Delete section"
+                aria-label="Delete section"
+              >
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 4h10M6.5 4V3h3v1M4.5 4l.5 9h6l.5-9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
               {/* Last in the row so it sits flush right, clear of the controls. */}
               <span
                 className={`${styles.count} ${total > 0 && done === total ? styles.complete : ""}`}

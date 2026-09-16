@@ -205,19 +205,30 @@
   outline: none;
 }
 
-/* Shown only while the name is being edited. */
-.deleteBtn {
+.iconBtn {
   flex: none;
   background: none;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  padding: 0.3rem 0.6rem;
+  padding: 0.25rem 0.35rem;
   color: var(--faint);
-  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
 }
-.deleteBtn:hover {
+.head:hover .iconBtn {
+  opacity: 1;
+}
+.iconBtn:hover {
+  color: var(--paper);
+  background: var(--panel);
+  border-color: var(--rule);
+}
+.iconBtn.danger:hover {
   color: var(--stop);
   background: var(--stop-dim);
+  border-color: transparent;
 }
 
 .list {
