@@ -61,16 +61,64 @@
   box-shadow: 0 0 6px var(--accent);
 }
 
-/* Checks or clears every step in the section; shows a dash when partly done. */
+/* Checks or clears every step in the section. Drawn by hand rather than left
+   native: the OS checkbox brings its own rounded corners and fill, which
+   clashed with the square step markers. Same size and shape as those. */
 .checkAll {
   flex: none;
-  width: 1.05rem;
-  height: 1.05rem;
-  accent-color: var(--accent);
+  position: relative;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: transparent;
   cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    background 0.14s ease;
 }
+.checkAll:hover {
+  border-color: var(--paper);
+}
+
+/* Every step done — green, the same signal the step markers use. */
+.checkAll:checked {
+  border-color: transparent;
+  background: rgba(87, 201, 138, 0.12);
+}
+.checkAll:checked::after {
+  content: "";
+  position: absolute;
+  left: 0.62rem;
+  top: 0.3rem;
+  width: 0.4rem;
+  height: 0.75rem;
+  border-right: 2px solid var(--go);
+  border-bottom: 2px solid var(--go);
+  transform: rotate(45deg);
+}
+
+/* Partly done — amber, meaning "in progress", never green. */
+.checkAll:indeterminate {
+  border-color: transparent;
+  background: var(--amber-dim);
+}
+.checkAll:indeterminate::after {
+  content: "";
+  position: absolute;
+  left: 0.45rem;
+  right: 0.45rem;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--amber);
+}
+
 .checkAll:disabled {
-  opacity: 0.35;
+  opacity: 0.3;
   cursor: default;
 }
 
