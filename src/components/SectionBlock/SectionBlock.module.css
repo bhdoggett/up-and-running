@@ -6,9 +6,9 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.35rem 0.2rem 0.45rem;
+  padding: 0.4rem 0.2rem 0.55rem;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.7rem;
 }
 
 .grip {
@@ -93,12 +93,13 @@
 .chevron.open {
   transform: rotate(90deg);
 }
+/* A section heads the steps beneath it, so it reads larger than a step title
+   (0.98rem) rather than as a small uppercase label. */
 .name {
-  font-size: 0.82rem;
+  font-size: 1.08rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  letter-spacing: -0.01em;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -124,8 +125,8 @@
 .nameInput {
   flex: 1;
   min-width: 0;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 1.08rem;
+  font-weight: 700;
   border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
   padding: 0.3rem 0.5rem;

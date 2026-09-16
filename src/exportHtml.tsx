@@ -171,8 +171,8 @@ export function renderChecklistHtml(checklist: Checklist): string {
   }
   details[open] > .section-head::before { transform: rotate(90deg); }
   .section-name {
-    font-size: .8rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .05em; color: #6b7280; flex: 1;
+    font-size: 1.08rem; font-weight: 700; letter-spacing: -.01em;
+    color: #1c1f23; flex: 1;
   }
   .section-count {
     font-size: .72rem; color: #9ca3af; border: 1px solid #e5e7eb;
@@ -217,6 +217,7 @@ export function renderChecklistHtml(checklist: Checklist): string {
     .task, .overview { background: #1f2226; border-color: #33373d; }
     .overview-label { color: #8b929c; }
     .section-head { border-bottom-color: #33373d; }
+    .section-name { color: #e7e9ea; }
     .section-count { background: #1f2226; border-color: #33373d; }
     .sub, .file-note { color: #8b929c; }
     .export-prose { color: #c3c7cd; }
