@@ -125,7 +125,7 @@
 .primary {
   background: var(--accent);
   border: 1px solid var(--accent);
-  color: #fff;
+  color: var(--case);
   border-radius: var(--radius-sm);
   padding: 0.45rem 1rem;
   font-weight: 600;

@@ -13,6 +13,8 @@ interface Props {
   onToggleDone: () => void;
   onUpdate: (task: Task) => void;
   onDelete: () => void;
+  /** Position in the checklist, counted continuously across sections. */
+  number: number;
   /** Start in edit mode (used for freshly-added steps). */
   autoEdit?: boolean;
   dragging?: boolean;
@@ -29,6 +31,7 @@ export default function TaskItem({
   onToggleDone,
   onUpdate,
   onDelete,
+  number,
   autoEdit = false,
   dragging = false,
   dropLine = false,
@@ -114,18 +117,37 @@ export default function TaskItem({
             <circle cx="3" cy="11" r="1.2" /><circle cx="7" cy="11" r="1.2" />
           </svg>
         </span>
-        <input
-          type="checkbox"
-          className={styles.check}
-          checked={task.done}
-          onChange={onToggleDone}
-          aria-label={`Mark "${task.title}" done`}
-        />
+        {/* The step number is the checkbox: ticking it turns the cue number
+            into a check. One control, and done-ness reads from across a room. */}
+        <label className={styles.marker}>
+          <input
+            type="checkbox"
+            className={styles.srCheck}
+            checked={task.done}
+            onChange={onToggleDone}
+            aria-label={`Mark "${task.title}" done`}
+          />
+          <span className={styles.markerFace} aria-hidden="true">
+            {task.done ? (
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8.5l3.2 3.2L13 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              number
+            )}
+          </span>
+        </label>
         <button
           className={styles.titleBtn}
           onClick={() => hasBody && setExpanded((v) => !v)}
           aria-expanded={expanded}
         >
+          <span className={`${styles.title} ${task.done ? styles.done : ""}`}>
+            {task.title}
+          </span>
+          {task.resources.length > 0 && (
+            <span className={styles.count}>{task.resources.length}</span>
+          )}
           {hasBody && (
             <svg
               className={`${styles.chevron} ${expanded ? styles.open : ""}`}
@@ -137,14 +159,6 @@ export default function TaskItem({
             >
               <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-          )}
-          <span className={`${styles.title} ${task.done ? styles.done : ""}`}>
-            {task.title}
-          </span>
-          {task.resources.length > 0 && (
-            <span className={styles.count}>
-              {task.resources.length} link{task.resources.length === 1 ? "" : "s"}
-            </span>
           )}
         </button>
 

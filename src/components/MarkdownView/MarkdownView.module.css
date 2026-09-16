@@ -1,7 +1,7 @@
 /* Prose styling shared by the in-app render. The export inlines an equivalent
    ruleset (see exportHtml.tsx) so both look the same. */
 .prose {
-  color: #c3c9d4;
+  color: var(--paper);
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
@@ -37,10 +37,8 @@
 }
 .prose h5,
 .prose h6 {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
+  font-size: 0.9rem;
+  color: var(--muted);
 }
 .prose p {
   margin: 0.5rem 0;

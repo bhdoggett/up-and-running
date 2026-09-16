@@ -1,14 +1,15 @@
 .section {
-  margin-bottom: 1.1rem;
+  margin-bottom: 2rem;
 }
 
 .head {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.4rem 0.2rem 0.55rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 0.7rem;
+  padding: 0.2rem 0.4rem 0.4rem 0;
+  /* Heavier rule than the hairlines between steps: this heads the block. */
+  border-bottom: 2px solid var(--rule-strong);
+  margin-bottom: 0.2rem;
 }
 
 .grip {
@@ -96,10 +97,11 @@
 /* A section heads the steps beneath it, so it reads larger than a step title
    (0.98rem) rather than as a small uppercase label. */
 .name {
-  font-size: 1.08rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text);
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--paper);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -110,12 +112,11 @@
 }
 .count {
   flex: none;
-  font-size: 0.72rem;
-  color: var(--text-faint);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.05rem 0.5rem;
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
 }
 .complete {
   color: var(--done);
@@ -198,7 +199,7 @@
 .addBtn {
   background: var(--accent);
   border: 1px solid var(--accent);
-  color: #fff;
+  color: var(--case);
   border-radius: var(--radius-sm);
   padding: 0 0.9rem;
   font-weight: 600;

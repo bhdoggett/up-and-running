@@ -22,9 +22,11 @@
   min-width: 0;
 }
 .title {
-  font-size: 1.5rem;
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 2.1rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.005em;
+  line-height: 1.1;
   margin: 0;
 }
 .titleBtn {
@@ -57,9 +59,9 @@
   color: var(--accent-hover);
 }
 .titleInput {
-  font-size: 1.5rem;
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 2.1rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
   width: 100%;
   border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
@@ -69,25 +71,25 @@
   outline: none;
 }
 .meta {
-  color: var(--text-muted);
-  font-size: 0.85rem;
+  color: var(--muted);
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
   margin-top: 0.3rem;
   display: flex;
   align-items: center;
   gap: 0.6rem;
 }
 .bar {
-  height: 6px;
+  height: 3px;
   flex: 1;
-  max-width: 160px;
-  background: var(--border);
-  border-radius: 999px;
+  max-width: 180px;
+  background: var(--rule);
   overflow: hidden;
 }
 .barFill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--done));
-  border-radius: 999px;
+  background: var(--go);
   transition: width 0.25s ease;
 }
 
@@ -110,13 +112,13 @@
 }
 
 /* Optional intro above the steps. */
+/* A note on the sheet, not a card: one rule in the margin carries it. */
 .description {
   position: relative;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.85rem 2.2rem 0.85rem 1.05rem;
-  margin-bottom: 1.3rem;
+  border-left: 2px solid var(--amber);
+  padding: 0.1rem 2.2rem 0.1rem 0.95rem;
+  margin-bottom: 1.6rem;
+  color: var(--muted);
 }
 .descEditBtn {
   position: absolute;
@@ -236,8 +238,9 @@
   bottom: 1.2rem;
   left: 50%;
   transform: translateX(-50%);
-  background: #1b1e23;
-  color: #fff;
+  background: var(--panel-2);
+  border: 1px solid var(--rule-strong);
+  color: var(--paper);
   padding: 0.6rem 1rem;
   border-radius: var(--radius-sm);
   font-size: 0.85rem;

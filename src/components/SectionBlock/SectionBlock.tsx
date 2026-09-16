@@ -12,6 +12,8 @@ interface Props {
   showHeader: boolean;
   /** Last section in the checklist — enables the "drop below to append" half. */
   isLast: boolean;
+  /** Number of the first step here; steps count on across sections. */
+  startNumber: number;
   onChange: (section: Section) => void;
   onDelete: () => void;
   drag: Drag;
@@ -31,6 +33,7 @@ export default function SectionBlock({
   section,
   showHeader,
   isLast,
+  startNumber,
   onChange,
   onDelete,
   drag,
@@ -288,10 +291,11 @@ export default function SectionBlock({
               onDragOver={listDragOver}
               onDrop={listDrop}
             >
-              {section.tasks.map((task) => (
+              {section.tasks.map((task, i) => (
                 <TaskItem
                   key={task.id}
                   task={task}
+                  number={startNumber + i}
                   autoEdit={task.id === justAddedId}
                   dragging={drag?.type === "task" && drag.taskId === task.id}
                   dropLine={

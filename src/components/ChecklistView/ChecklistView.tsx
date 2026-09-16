@@ -240,6 +240,13 @@ export default function ChecklistView({ checklist, onChange }: Props) {
             section={section}
             showHeader={showHeaders}
             isLast={index === checklist.sections.length - 1}
+            // Steps are numbered continuously, so "step 7 of 32" means something
+            // whichever section it happens to sit in.
+            startNumber={
+              checklist.sections
+                .slice(0, index)
+                .reduce((n, s) => n + s.tasks.length, 0) + 1
+            }
             onChange={updateSection}
             onDelete={() => deleteSection(section.id)}
             drag={drag}

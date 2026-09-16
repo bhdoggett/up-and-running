@@ -1,24 +1,73 @@
+/* A row on a ruled sheet, not a card: structure comes from the hairline
+   between steps and from the number in the margin. */
 .item {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease;
+  position: relative;
+  border-bottom: 1px solid var(--rule);
+}
+.item:last-child {
+  border-bottom: none;
 }
 .item:hover {
-  border-color: var(--border-strong);
-  box-shadow: 0 0 0 1px var(--accent-soft), 0 8px 24px rgba(0, 0, 0, 0.35);
-}
-.item.done {
-  background: var(--surface-2);
-  opacity: 0.85;
+  background: rgba(255, 255, 255, 0.015);
 }
 
 .head {
   display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.6rem 0.4rem 0.6rem 0;
+}
+
+/* Step number doubles as the checkbox. */
+.marker {
+  flex: none;
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.85rem 0.95rem 0.85rem 0.5rem;
+  justify-content: center;
+  width: 2.1rem;
+  height: 1.9rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.srCheck {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.markerFace {
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-weight: 600;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  transition:
+    color 0.14s ease,
+    border-color 0.14s ease,
+    background 0.14s ease;
+}
+.marker:hover .markerFace {
+  color: var(--paper);
+  border-color: var(--rule-strong);
+}
+.srCheck:focus-visible + .markerFace {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.item.done .markerFace {
+  color: var(--go);
+  border-color: transparent;
+  background: rgba(87, 201, 138, 0.1);
 }
 
 /* Grip is the only drag affordance, so selecting text in the card still works. */
@@ -62,51 +111,62 @@
   box-shadow: 0 0 6px var(--accent);
 }
 
-.check {
-  /* Matches the section's check-all box so the two read as one control set. */
-  width: 1.05rem;
-  height: 1.05rem;
-  flex: none;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
 .titleBtn {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.5rem;
   background: none;
   border: none;
-  padding: 0;
+  padding: 0.15rem 0;
   text-align: left;
-  color: var(--text);
-  font-weight: 600;
-  font-size: 0.98rem;
+  color: var(--paper);
+  font-weight: 500;
+  font-size: 1.02rem;
 }
+.title {
+  min-width: 0;
+  transition: color 0.16s ease;
+}
+
+/* The one loud moment: a completed step is struck and stood down. */
 .title.done {
-  text-decoration: line-through;
-  color: var(--text-faint);
+  color: var(--faint);
+  position: relative;
+}
+.title.done::after {
+  content: "";
+  position: absolute;
+  left: -0.1em;
+  right: -0.1em;
+  top: 0.62em;
+  height: 1px;
+  background: var(--go);
+  opacity: 0.85;
 }
 
 .chevron {
-  color: var(--text-faint);
+  color: var(--faint);
   transition: transform 0.15s ease;
   flex: none;
+  align-self: center;
 }
 .chevron.open {
   transform: rotate(90deg);
 }
 
+/* Count of attached links/files — a tally mark, not a pill. */
 .count {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.05rem 0.5rem;
   flex: none;
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.count::before {
+  content: "◇ ";
+  color: var(--faint);
 }
 
 .iconBtn {
@@ -126,13 +186,13 @@
   border-color: var(--border);
 }
 .body {
-  padding: 0 0.95rem 0.95rem 3rem;
+  /* Aligns with the title, clear of the number margin. */
+  padding: 0 0.4rem 0.9rem 2.7rem;
 }
 
 .details {
   margin: 0 0 0.5rem;
-  color: #374151;
-  white-space: pre-wrap;
+  color: var(--muted);
 }
 
 .resources {
@@ -168,7 +228,7 @@
 
 /* ---- edit mode ---- */
 .editBody {
-  padding: 0 0.95rem 0.95rem 3rem;
+  padding: 0 0.4rem 0.9rem 2.7rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -186,11 +246,9 @@
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .label {
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  color: var(--muted);
 }
 .editActions {
   display: flex;
@@ -216,9 +274,9 @@
   background: var(--danger-soft);
 }
 .primaryBtn {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: #fff;
+  background: var(--amber);
+  border: 1px solid var(--amber);
+  color: var(--case);
   border-radius: var(--radius-sm);
   padding: 0.4rem 0.9rem;
   font-size: 0.88rem;

@@ -13,15 +13,13 @@
   padding: 1.1rem 1.1rem 0.9rem;
   border-bottom: 1px solid var(--border);
 }
+/* Plain condensed wordmark: the gradient was decoration doing no work. */
 .brandName {
-  font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  background: linear-gradient(100deg, #aeb8ff, #7c8cff 55%, #34d399);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  width: fit-content;
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--paper);
 }
 
 /* Project switcher: which event's material the lists below belong to. */
@@ -51,7 +49,8 @@
   flex: 1;
   min-width: 0;
   text-align: left;
-  font-size: 0.88rem;
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 1.1rem;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -151,11 +150,10 @@
   padding: 0.9rem 1rem 0.4rem;
 }
 .listLabel {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-faint);
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--muted);
 }
 .headBtns {
   display: flex;

@@ -10,11 +10,10 @@
   background: none;
   border: none;
   padding: 0.15rem 0;
-  color: var(--text-faint);
-  font-size: 0.8rem;
+  color: var(--faint);
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
 }
 .toggle:hover {
   color: var(--accent);
@@ -212,11 +211,10 @@
   overflow-y: auto;
 }
 .pickerLabel {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-faint);
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--faint);
   padding: 0.35rem 0.5rem 0.2rem;
 }
 .pickerEmpty {
