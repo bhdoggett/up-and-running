@@ -12,6 +12,9 @@ import { newId, allFiles } from "./types";
 import { loadState, saveState } from "./storage";
 import { importItemFromFile, type ImportedItem } from "./importFile";
 import { openLink } from "./appLinks";
+import { safeAttachmentName } from "./attachments";
+import { appDataDir, join } from "@tauri-apps/api/path";
+import { mkdir, writeFile } from "@tauri-apps/plugin-fs";
 import { exportProjectToUar } from "./exportHtml";
 import { LibraryProvider } from "./library";
 import { message, open as openDialog, confirm } from "@tauri-apps/plugin-dialog";
@@ -289,6 +292,36 @@ export default function App() {
     patchProject((p) => ({ ...p, files: [...p.files, ...added] }));
   }
 
+  /**
+   * Files dropped onto the window. The webview hands us bytes and a name but
+   * no path — Tauri's native drag-drop, which does report paths, is switched
+   * off so that in-app reordering works — so the bytes are copied into the
+   * app's attachments folder and referenced from there.
+   */
+  async function addDroppedFiles(list: FileList) {
+    try {
+      const dir = await join(await appDataDir(), "attachments");
+      await mkdir(dir, { recursive: true });
+
+      const added: Resource[] = [];
+      for (const file of Array.from(list)) {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const dest = await join(dir, `${newId()}-${safeAttachmentName(file.name)}`);
+        await writeFile(dest, bytes);
+        added.push({ id: newId(), label: file.name, kind: "file", target: dest });
+      }
+      if (added.length) {
+        patchProject((p) => ({ ...p, files: [...p.files, ...added] }));
+      }
+    } catch (e) {
+      console.error("Could not add dropped files", e);
+      await message(String(e instanceof Error ? e.message : e), {
+        title: "Couldn't add those files",
+        kind: "error",
+      });
+    }
+  }
+
   function removeFile(id: string) {
     patchProject((p) => ({ ...p, files: p.files.filter((f) => f.id !== id) }));
   }
@@ -388,6 +421,7 @@ export default function App() {
           onAddFile={addFile}
           onRemoveFile={removeFile}
           onOpenFile={openLink}
+          onDropFiles={addDroppedFiles}
           onImport={importFromFile}
           onAiImport={(kind) => setAiImportKind(kind)}
           width={sidebarWidth}

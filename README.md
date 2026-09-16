@@ -128,25 +128,6 @@ and fixed control sizes. Two signal colours do real work and nothing else:
 
 ---
 
-## Releasing
-
-Push a version tag and CI builds every platform:
-
-```sh
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-`.github/workflows/release.yml` builds macOS (both architectures) and Windows,
-then attaches the installers to a **draft** release — nothing goes public until
-you publish it. Cross-compiling isn't possible, which is why this runs on CI
-rather than locally.
-
-Keep the version in `package.json`, `src-tauri/tauri.conf.json`, and
-`src-tauri/Cargo.toml` in step with the tag.
-
----
-
 ## Known limits
 
 - **Attached files are paths, not copies.** A file attached on one machine

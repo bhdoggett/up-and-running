@@ -349,3 +349,11 @@
   color: var(--text-faint);
   font-size: 0.82rem;
 }
+
+/* A file is being dragged over the list from outside the app. */
+.dropping {
+  outline: 1px dashed var(--amber);
+  outline-offset: -2px;
+  background: var(--amber-dim);
+  border-radius: var(--radius-sm);
+}
