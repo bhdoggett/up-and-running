@@ -27,6 +27,13 @@
   --radius: 3px;
   --radius-sm: 2px;
 
+  /* Rows read [grip][number][title]. The grip column plus the row gap is how
+     far in the number column starts — shared so anything that needs to line up
+     with the numbers (the add-step row) stays in step with it. */
+  --grip-col: 0.9rem;
+  --row-gap: 0.6rem;
+  --number-indent: calc(var(--grip-col) + var(--row-gap));
+
   /* Legacy aliases: the palette moved, these keep older rules honest. */
   --bg: var(--case);
   --surface: var(--panel);

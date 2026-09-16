@@ -5,7 +5,7 @@
 .head {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--row-gap);
   padding: 0.2rem 0.4rem 0.4rem 0;
   /* Heavier rule than the hairlines between steps: this heads the block. */
   border-bottom: 2px solid var(--rule-strong);
@@ -14,12 +14,12 @@
 
 .grip {
   flex: none;
+  width: var(--grip-col);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.15rem 0.1rem;
-  margin-left: -0.15rem;
-  color: var(--border-strong);
+  padding: 0.15rem 0;
+  color: var(--rule-strong);
   cursor: grab;
   opacity: 0;
   transition: opacity 0.12s ease;
@@ -216,7 +216,8 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  /* No gap: the hairlines between rows should read as continuous rules. */
+  gap: 0;
 }
 
 .empty {
@@ -229,6 +230,8 @@
   display: flex;
   gap: 0.5rem;
   margin-top: 0.6rem;
+  /* Line up with the number column, past the grip. */
+  margin-left: var(--number-indent);
 }
 .addInput {
   flex: 1;
