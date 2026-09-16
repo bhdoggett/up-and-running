@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import type { Checklist, Doc, FileUse, ItemKind, Selection } from "../../types";
 import { allTasks } from "../../types";
@@ -49,7 +50,26 @@ export default function Sidebar({
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
-  const [importOpen, setImportOpen] = useState(false);
+  // The menu is portalled to <body> with fixed coords: the sidebar's scroll
+  // container would otherwise clip it as soon as it reaches the edge.
+  const [menuAt, setMenuAt] = useState<{ top: number; left: number } | null>(null);
+  const importBtn = useRef<HTMLButtonElement>(null);
+
+  const MENU_WIDTH = 210;
+
+  function toggleImportMenu() {
+    if (menuAt) {
+      setMenuAt(null);
+      return;
+    }
+    const r = importBtn.current?.getBoundingClientRect();
+    if (!r) return;
+    setMenuAt({
+      top: r.bottom + 6,
+      // Keep it on screen if the sidebar is narrow or dragged wide.
+      left: Math.min(r.left, window.innerWidth - MENU_WIDTH - 12),
+    });
+  }
 
   function commitRename(kind: ItemKind) {
     if (editingId) onRename(kind, editingId, draft.trim() || "Untitled");
@@ -82,45 +102,17 @@ export default function Sidebar({
           <span className={styles.listLabel}>{label}</span>
           <div className={styles.headBtns}>
             {kind === "checklist" && (
-              <div className={styles.importWrap}>
-                <button
-                  className={styles.addBtn}
-                  onClick={() => setImportOpen((v) => !v)}
-                  title="Import a checklist"
-                  aria-label="Import checklist"
-                >
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 2v7M5 6.5L8 9.5l3-3M3 12v1.5h10V12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-                {importOpen && (
-                  <>
-                    <div className={styles.menuBackdrop} onClick={() => setImportOpen(false)} />
-                    <div className={styles.menu}>
-                      <button
-                        className={styles.menuItem}
-                        onClick={() => {
-                          setImportOpen(false);
-                          onImport();
-                        }}
-                      >
-                        <strong>From a checklist file</strong>
-                        <span>.uar or exported .html</span>
-                      </button>
-                      <button
-                        className={styles.menuItem}
-                        onClick={() => {
-                          setImportOpen(false);
-                          onAiImport();
-                        }}
-                      >
-                        <strong>From a document (AI)</strong>
-                        <span>Word doc, PDF, or notes</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+              <button
+                ref={importBtn}
+                className={styles.addBtn}
+                onClick={toggleImportMenu}
+                title="Import a checklist"
+                aria-label="Import checklist"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 2v7M5 6.5L8 9.5l3-3M3 12v1.5h10V12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
             )}
             <button className={styles.addBtn} onClick={onAdd} title={`New ${kind}`} aria-label={`New ${kind}`}>
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -264,6 +256,39 @@ export default function Sidebar({
           ))}
         </ul>
       </div>
+
+      {menuAt &&
+        createPortal(
+          <>
+            <div className={styles.menuBackdrop} onClick={() => setMenuAt(null)} />
+            <div
+              className={styles.menu}
+              style={{ top: menuAt.top, left: menuAt.left, width: MENU_WIDTH }}
+            >
+              <button
+                className={styles.menuItem}
+                onClick={() => {
+                  setMenuAt(null);
+                  onImport();
+                }}
+              >
+                <strong>From a checklist file</strong>
+                <span>.uar or exported .html</span>
+              </button>
+              <button
+                className={styles.menuItem}
+                onClick={() => {
+                  setMenuAt(null);
+                  onAiImport();
+                }}
+              >
+                <strong>From a document (AI)</strong>
+                <span>Word doc, PDF, or notes</span>
+              </button>
+            </div>
+          </>,
+          document.body,
+        )}
     </aside>
   );
 }
