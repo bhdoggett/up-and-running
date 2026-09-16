@@ -140,22 +140,31 @@ export default function App() {
     }
     function onDrop(e: DragEvent) {
       if (!carriesFiles(e)) return;
+      // A Resources area that took the drop stopped it before here; anything
+      // reaching the window was dropped on nothing, so only clear the state.
       e.preventDefault();
       dragDepth.current = 0;
       setFileDrag(false);
-      const files = e.dataTransfer?.files;
-      if (files?.length) void addDroppedFiles(files);
+    }
+
+    // A drag that ends outside the window, or is cancelled, never produces a
+    // drop — without this the zones would stay up.
+    function onEnd() {
+      dragDepth.current = 0;
+      setFileDrag(false);
     }
 
     window.addEventListener("dragenter", onEnter);
     window.addEventListener("dragover", onOver);
     window.addEventListener("dragleave", onLeave);
     window.addEventListener("drop", onDrop);
+    window.addEventListener("dragend", onEnd);
     return () => {
       window.removeEventListener("dragenter", onEnter);
       window.removeEventListener("dragover", onOver);
       window.removeEventListener("dragleave", onLeave);
       window.removeEventListener("drop", onDrop);
+      window.removeEventListener("dragend", onEnd);
     };
   });
 
@@ -369,14 +378,6 @@ export default function App() {
     }
   }
 
-  /** Dropped on the window at large: the files belong to the project. */
-  async function addDroppedFiles(list: FileList) {
-    const added = await attachFiles(list);
-    if (added.length) {
-      patchProject((p) => ({ ...p, files: [...p.files, ...added] }));
-    }
-  }
-
   function removeFile(id: string) {
     patchProject((p) => ({ ...p, files: p.files.filter((f) => f.id !== id) }));
   }
@@ -506,17 +507,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Purely an indicator — the window's own handler takes the drop, so
-            this must not sit in front of it. */}
-        {fileDrag && (
-          <div className={styles.fileDrop}>
-            <div className={styles.fileDropInner}>
-              Drop to add to {project?.name ?? "this project"}
-            </div>
-          </div>
-        )}
-
-        {aiImportKind && (
+                {aiImportKind && (
           <AiImportDialog
             kind={aiImportKind}
             onClose={() => setAiImportKind(null)}

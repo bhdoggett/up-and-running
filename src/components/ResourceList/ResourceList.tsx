@@ -30,7 +30,8 @@ export default function ResourceList({
   onChange,
   showLinkedItems = true,
 }: Props) {
-  const { checklists, docs, currentId, navigate } = useLibrary();
+  const { checklists, docs, currentId, navigate, fileDrag, attachFiles } = useLibrary();
+  const [over, setOver] = useState(false);
   const labelFor = useResourceLabel();
   const [editingRow, setEditingRow] = useState<RowKind | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -236,6 +237,35 @@ export default function ResourceList({
               </div>
             </>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // While files are dragged over the window this whole area becomes the target,
+  // so a file lands in the resources of whatever it was dropped on.
+  if (fileDrag) {
+    return (
+      <div className={styles.wrap}>
+        <div
+          className={`${styles.dropZone} ${over ? styles.dropZoneOver : ""}`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOver(true);
+          }}
+          onDragLeave={() => setOver(false)}
+          onDrop={async (e) => {
+            e.preventDefault();
+            // Deliberately not stopping propagation: the window listener is
+            // what clears the drag state, so swallowing the event here left
+            // every drop zone on screen afterwards.
+            setOver(false);
+            const added = await attachFiles(e.dataTransfer.files);
+            if (added.length) onChange([...resources, ...added]);
+          }}
+        >
+          Drop files here
         </div>
       </div>
     );

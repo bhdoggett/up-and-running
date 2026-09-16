@@ -30,33 +30,6 @@
   background: var(--accent);
 }
 
-/* Shown while a file is dragged over the window. pointer-events: none is
-   essential — the window handles the drop, and anything solid here would
-   swallow it. */
-.fileDrop {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  pointer-events: none;
-  /* An outline, not a scrim: a step's own drop zone has to stay visible. */
-  border: 2px dashed var(--amber);
-}
-.fileDropInner {
-  position: absolute;
-  left: 50%;
-  bottom: 1.4rem;
-  transform: translateX(-50%);
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--amber);
-  border-radius: var(--radius);
-  background: var(--panel);
-  color: var(--amber);
-  font-family: "Barlow Condensed", Barlow, sans-serif;
-  font-size: 1.05rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
 .loading {
   display: grid;
   place-items: center;

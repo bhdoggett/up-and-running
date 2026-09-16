@@ -182,6 +182,25 @@
   gap: 0.35rem;
 }
 
+/* While a file is dragged, this area is the drop target for the item it
+   belongs to — a step, a checklist, or a doc. */
+.dropZone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 0.9rem;
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--radius);
+  color: var(--faint);
+  font-size: 0.88rem;
+}
+.dropZoneOver {
+  border-style: solid;
+  border-color: var(--amber);
+  background: var(--amber-dim);
+  color: var(--amber);
+}
+
 /* Internal links (docs/checklists) read differently from outward links. */
 .internal {
   color: var(--done);

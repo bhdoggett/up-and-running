@@ -49,8 +49,7 @@ export default function TaskItem({
   // means such a step opens on the same click rather than the next one.
   const [expanded, setExpanded] = useState(pulse.count > 0 && pulse.open);
   const [editing, setEditing] = useState(false);
-  const { navigate, fileDrag, attachFiles } = useLibrary();
-  const [overDrop, setOverDrop] = useState(false);
+  const { navigate, fileDrag } = useLibrary();
   const labelFor = useResourceLabel();
 
   const hasBody = task.details.trim() !== "" || task.resources.length > 0;
@@ -196,28 +195,14 @@ export default function TaskItem({
         </button>
       </div>
 
-      {/* Expanded steps claim the drop for themselves; anywhere else on the
-          window it goes to the project's files. Being expanded is enough —
-          the editor doesn't have to be open. */}
-      {expanded && fileDrag && (
-        <div
-          className={`${styles.stepDrop} ${overDrop ? styles.stepDropOver : ""}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setOverDrop(true);
-          }}
-          onDragLeave={() => setOverDrop(false)}
-          onDrop={async (e) => {
-            e.preventDefault();
-            // Keep it from reaching the window, which would file it elsewhere.
-            e.stopPropagation();
-            setOverDrop(false);
-            const added = await attachFiles(e.dataTransfer.files);
-            if (added.length) patch({ resources: [...task.resources, ...added] });
-          }}
-        >
-          Attach to this step
+            {/* An expanded step shows its Resources area while a file is dragged, so
+          the file can be attached to this step without opening the editor. */}
+      {expanded && !editing && fileDrag && (
+        <div className={styles.body}>
+          <ResourceList
+            resources={task.resources}
+            onChange={(resources) => patch({ resources })}
+          />
         </div>
       )}
 
