@@ -215,7 +215,13 @@ export default function Sidebar({
   return (
     <aside className={styles.sidebar} style={{ width }}>
       <div className={styles.brand}>
-        <div className={styles.brandName}>Up and Running</div>
+        <div className={styles.brandRow}>
+          {/* The mark is a markdown heading marker — the app's own material. */}
+          <span className={styles.mark} aria-hidden="true">
+            ##
+          </span>
+          <span className={styles.brandName}>Up and Running</span>
+        </div>
         {editingProject ? (
           <input
             className={styles.projectInput}

@@ -13,8 +13,29 @@
   padding: 1.1rem 1.1rem 0.9rem;
   border-bottom: 1px solid var(--border);
 }
+.brandRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  min-width: 0;
+}
+/* Markdown.s heading marker, set as a glyph so it reads as a mark rather
+   than as stray syntax in front of the name. */
+.mark {
+  flex: none;
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: var(--amber);
+}
 /* Plain condensed wordmark: the gradient was decoration doing no work. */
 .brandName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: "Barlow Condensed", Barlow, sans-serif;
   font-size: 1.3rem;
   font-weight: 700;
