@@ -361,6 +361,8 @@ export default function App() {
           onSelect={select}
           onAddChecklist={addChecklist}
           onAddDoc={addDoc}
+          onRename={rename}
+          onDelete={remove}
           files={project ? allFiles(project) : []}
           onAddFile={addFile}
           onRemoveFile={removeFile}

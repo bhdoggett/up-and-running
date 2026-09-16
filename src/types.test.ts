@@ -16,7 +16,7 @@ function task(id: string, done = false) {
 
 describe("withSections", () => {
   it("wraps a pre-sections flat task list in one unnamed section", () => {
-    const old = { id: "c", name: "Old", tasks: [task("t1"), task("t2")] } as Checklist;
+    const old = { id: "c", name: "Old", tasks: [task("t1"), task("t2")] } as unknown as Checklist;
     const out = withSections(old);
     expect(out.sections).toHaveLength(1);
     expect(out.sections[0].name).toBe("");
@@ -28,7 +28,7 @@ describe("withSections", () => {
       id: "c",
       name: "N",
       sections: [{ id: "s", name: "Setup", collapsed: true, tasks: [task("t1")] }],
-    } as Checklist;
+    } as unknown as Checklist;
     const out = withSections(c);
     expect(out.sections).toHaveLength(1);
     expect(out.sections[0].name).toBe("Setup");
@@ -42,7 +42,7 @@ describe("withSections", () => {
   });
 
   it("survives a checklist with neither tasks nor sections", () => {
-    const out = withSections({ id: "c", name: "N" } as Checklist);
+    const out = withSections({ id: "c", name: "N" } as unknown as Checklist);
     expect(out.sections[0].tasks).toEqual([]);
   });
 });
@@ -129,7 +129,7 @@ describe("allTasks", () => {
         { id: "s1", name: "One", collapsed: false, tasks: [task("a"), task("b")] },
         { id: "s2", name: "Two", collapsed: false, tasks: [task("c")] },
       ],
-    } as Checklist);
+    } as unknown as Checklist);
     expect(allTasks(c).map((t) => t.id)).toEqual(["a", "b", "c"]);
   });
 });
