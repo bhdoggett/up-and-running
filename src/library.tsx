@@ -4,6 +4,8 @@ import type { Checklist, Doc, Resource, Selection } from "./types";
 interface LibraryValue {
   checklists: Checklist[];
   docs: Doc[];
+  /** Id of the item on screen, so it can't be offered as a link to itself. */
+  currentId: string | null;
   /** Jump to a checklist or doc in the main pane. */
   navigate: (sel: Selection) => void;
 }

@@ -342,6 +342,7 @@ export default function App() {
       value={{
         checklists: project?.checklists ?? [],
         docs: project?.docs ?? [],
+        currentId: state.active?.id ?? null,
         navigate: select,
       }}
     >

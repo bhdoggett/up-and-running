@@ -30,12 +30,12 @@ export default function ResourceList({
   onChange,
   showLinkedItems = true,
 }: Props) {
-  const { checklists, docs, navigate } = useLibrary();
+  const { checklists, docs, currentId, navigate } = useLibrary();
   const labelFor = useResourceLabel();
   const [editingRow, setEditingRow] = useState<RowKind | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   // Collapsed by default so the header stays quiet; the count says what's here.
-  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   function update(id: string, changes: Partial<Resource>) {
     onChange(resources.map((r) => (r.id === id ? { ...r, ...changes } : r)));
@@ -60,12 +60,21 @@ export default function ResourceList({
     setEditingRow("web");
   }
 
+  /** Is this exact target already linked here? Keeps the list free of dupes. */
+  function alreadyLinked(kind: ResourceKind, target: string): boolean {
+    return resources.some((r) => r.kind === kind && r.target === target);
+  }
+
   async function addFile() {
     const selected = await openDialog({
       title: "Choose a file",
       multiple: false,
     });
     if (typeof selected !== "string") return;
+    if (alreadyLinked("file", selected)) {
+      setEditingRow("file"); // already here — show the list rather than duplicate
+      return;
+    }
     const fallback = selected.split(/[\\/]/).pop() || selected;
     onChange([
       ...resources,
@@ -75,9 +84,18 @@ export default function ResourceList({
 
   function addItem(kind: "doc" | "checklist", id: string) {
     setPickerOpen(false);
+    if (alreadyLinked(kind, id)) return;
     // Label stays empty so the link follows the item's current name.
     onChange([...resources, { id: newId(), label: "", kind, target: id }]);
   }
+
+  // Only offer items that aren't this one and aren't already linked.
+  const linkableDocs = docs.filter(
+    (d) => d.id !== currentId && !alreadyLinked("doc", d.id),
+  );
+  const linkableChecklists = checklists.filter(
+    (c) => c.id !== currentId && !alreadyLinked("checklist", c.id),
+  );
 
   function renderRow(row: (typeof ROWS)[number]) {
     const items = resources.filter((r) => rowOf(r.kind) === row.key);
@@ -128,7 +146,19 @@ export default function ResourceList({
                       className={styles.input}
                       value={r.target}
                       onChange={(e) => update(r.id, { target: e.target.value })}
-                      onBlur={(e) => update(r.id, { target: normalizeTarget(e.target.value) })}
+                      onBlur={(e) => {
+                        const target = normalizeTarget(e.target.value);
+                        // Typing a URL that's already in the list drops this row
+                        // rather than leaving two entries pointing at one page.
+                        const dupe = resources.some(
+                          (o) => o.id !== r.id && o.kind === "web" && o.target === target,
+                        );
+                        if (dupe && target) {
+                          onChange(resources.filter((o) => o.id !== r.id));
+                          return;
+                        }
+                        update(r.id, { target });
+                      }}
                       placeholder="https://…"
                     />
                   ) : (
@@ -182,17 +212,19 @@ export default function ResourceList({
               <div className={styles.menuBackdrop} onClick={() => setPickerOpen(false)} />
               <div className={styles.picker}>
                 <div className={styles.pickerLabel}>Docs</div>
-                {docs.length === 0 && <div className={styles.pickerEmpty}>No docs yet</div>}
-                {docs.map((d) => (
+                {linkableDocs.length === 0 && (
+                  <div className={styles.pickerEmpty}>Nothing left to link</div>
+                )}
+                {linkableDocs.map((d) => (
                   <button key={d.id} className={styles.pickerItem} onClick={() => addItem("doc", d.id)}>
                     {d.name}
                   </button>
                 ))}
                 <div className={styles.pickerLabel}>Checklists</div>
-                {checklists.length === 0 && (
-                  <div className={styles.pickerEmpty}>No checklists yet</div>
+                {linkableChecklists.length === 0 && (
+                  <div className={styles.pickerEmpty}>Nothing left to link</div>
                 )}
-                {checklists.map((c) => (
+                {linkableChecklists.map((c) => (
                   <button
                     key={c.id}
                     className={styles.pickerItem}
@@ -213,11 +245,11 @@ export default function ResourceList({
     <div className={styles.wrap}>
       <button
         className={styles.toggle}
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
       >
         <svg
-          className={`${styles.toggleChevron} ${open ? styles.open : ""}`}
+          className={`${styles.toggleChevron} ${expanded ? styles.open : ""}`}
           width="10"
           height="10"
           viewBox="0 0 12 12"
@@ -228,7 +260,7 @@ export default function ResourceList({
         </svg>
         Resources ({resources.length})
       </button>
-      {open && (
+      {expanded && (
         <div className={styles.rows}>
           {ROWS.filter((r) => r.key !== "item" || showLinkedItems).map(renderRow)}
         </div>
