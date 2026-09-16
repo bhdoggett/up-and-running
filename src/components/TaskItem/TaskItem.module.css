@@ -96,6 +96,22 @@
   border-color: var(--accent);
 }
 
+/* Drop zone shown inside an expanded step while files are dragged over. */
+.stepDrop {
+  margin: 0 0.4rem 0.7rem 2.7rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--radius);
+  color: var(--faint);
+  font-size: 0.88rem;
+}
+.stepDropOver {
+  border-style: solid;
+  border-color: var(--amber);
+  background: var(--amber-dim);
+  color: var(--amber);
+}
+
 /* Insertion indicator: the step would land above this one. */
 .item.dropLine {
   position: relative;

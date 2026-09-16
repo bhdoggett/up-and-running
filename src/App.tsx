@@ -111,6 +111,54 @@ export default function App() {
     };
   }, []);
 
+  // Dragging a file anywhere over the window reveals a drop zone, so nothing
+  // has to be expanded first. Listeners sit on the window rather than on a
+  // particular list: the pointer can be anywhere when the drag begins.
+  const [fileDrag, setFileDrag] = useState(false);
+  const dragDepth = useRef(0);
+
+  useEffect(() => {
+    const carriesFiles = (e: DragEvent) =>
+      Array.from(e.dataTransfer?.types ?? []).includes("Files");
+
+    function onEnter(e: DragEvent) {
+      if (!carriesFiles(e)) return;
+      dragDepth.current += 1;
+      setFileDrag(true);
+    }
+    function onOver(e: DragEvent) {
+      if (!carriesFiles(e)) return;
+      // Without this the webview treats the drop as "open that file".
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    }
+    function onLeave(e: DragEvent) {
+      if (!carriesFiles(e)) return;
+      // dragleave fires crossing every child, so count in and out instead.
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (dragDepth.current === 0) setFileDrag(false);
+    }
+    function onDrop(e: DragEvent) {
+      if (!carriesFiles(e)) return;
+      e.preventDefault();
+      dragDepth.current = 0;
+      setFileDrag(false);
+      const files = e.dataTransfer?.files;
+      if (files?.length) void addDroppedFiles(files);
+    }
+
+    window.addEventListener("dragenter", onEnter);
+    window.addEventListener("dragover", onOver);
+    window.addEventListener("dragleave", onLeave);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragenter", onEnter);
+      window.removeEventListener("dragover", onOver);
+      window.removeEventListener("dragleave", onLeave);
+      window.removeEventListener("drop", onDrop);
+    };
+  });
+
   if (!state) {
     return <div className={styles.loading}>Loading…</div>;
   }
@@ -298,7 +346,7 @@ export default function App() {
    * off so that in-app reordering works — so the bytes are copied into the
    * app's attachments folder and referenced from there.
    */
-  async function addDroppedFiles(list: FileList) {
+  async function attachFiles(list: FileList): Promise<Resource[]> {
     try {
       const dir = await join(await appDataDir(), "attachments");
       await mkdir(dir, { recursive: true });
@@ -310,15 +358,22 @@ export default function App() {
         await writeFile(dest, bytes);
         added.push({ id: newId(), label: file.name, kind: "file", target: dest });
       }
-      if (added.length) {
-        patchProject((p) => ({ ...p, files: [...p.files, ...added] }));
-      }
+      return added;
     } catch (e) {
       console.error("Could not add dropped files", e);
       await message(String(e instanceof Error ? e.message : e), {
         title: "Couldn't add those files",
         kind: "error",
       });
+      return [];
+    }
+  }
+
+  /** Dropped on the window at large: the files belong to the project. */
+  async function addDroppedFiles(list: FileList) {
+    const added = await attachFiles(list);
+    if (added.length) {
+      patchProject((p) => ({ ...p, files: [...p.files, ...added] }));
     }
   }
 
@@ -398,6 +453,8 @@ export default function App() {
         docs: project?.docs ?? [],
         currentId: state.active?.id ?? null,
         navigate: select,
+        fileDrag,
+        attachFiles,
       }}
     >
       <div className={styles.app}>
@@ -421,7 +478,6 @@ export default function App() {
           onAddFile={addFile}
           onRemoveFile={removeFile}
           onOpenFile={openLink}
-          onDropFiles={addDroppedFiles}
           onImport={importFromFile}
           onAiImport={(kind) => setAiImportKind(kind)}
           width={sidebarWidth}
@@ -446,6 +502,16 @@ export default function App() {
             <div>
               <h2>Nothing selected</h2>
               <p>Pick a checklist or doc on the left, or create a new one.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Purely an indicator — the window's own handler takes the drop, so
+            this must not sit in front of it. */}
+        {fileDrag && (
+          <div className={styles.fileDrop}>
+            <div className={styles.fileDropInner}>
+              Drop to add to {project?.name ?? "this project"}
             </div>
           </div>
         )}

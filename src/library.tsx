@@ -8,6 +8,13 @@ interface LibraryValue {
   currentId: string | null;
   /** Jump to a checklist or doc in the main pane. */
   navigate: (sel: Selection) => void;
+  /** True while files are being dragged over the window. */
+  fileDrag: boolean;
+  /**
+   * Copy dropped files into the app's attachments folder and hand back
+   * resources pointing at them. Whoever took the drop decides where they go.
+   */
+  attachFiles: (files: FileList) => Promise<Resource[]>;
 }
 
 const LibraryContext = createContext<LibraryValue | null>(null);

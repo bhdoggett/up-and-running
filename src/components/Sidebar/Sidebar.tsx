@@ -25,7 +25,6 @@ interface Props {
   onAddFile: () => void;
   onRemoveFile: (id: string) => void;
   onOpenFile: (target: string) => void;
-  onDropFiles: (files: FileList) => void;
   onImport: () => void;
   onAiImport: (kind: ItemKind) => void;
   /** Current width in px (set by the draggable divider in App). */
@@ -59,7 +58,6 @@ export default function Sidebar({
   onAddFile,
   onRemoveFile,
   onOpenFile,
-  onDropFiles,
   onImport,
   onAiImport,
   width,
@@ -79,7 +77,6 @@ export default function Sidebar({
     null,
   );
   const [editingProject, setEditingProject] = useState(false);
-  const [dropping, setDropping] = useState(false);
   const [projectDraft, setProjectDraft] = useState("");
 
   const activeProject = projects.find((p) => p.id === activeProjectId) ?? null;
@@ -320,31 +317,9 @@ export default function Sidebar({
             </button>
           </div>
         </div>
-        {/* Files can also be dropped straight in from Finder or Explorer. */}
-        <ul
-          className={`${styles.list} ${dropping ? styles.dropping : ""}`}
-          onDragOver={(e) => {
-            if (!e.dataTransfer.types.includes("Files")) return;
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "copy";
-            setDropping(true);
-          }}
-          onDragLeave={(e) => {
-            // Ignore the moves between children inside this list.
-            if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-            setDropping(false);
-          }}
-          onDrop={(e) => {
-            if (!e.dataTransfer.files.length) return;
-            e.preventDefault();
-            setDropping(false);
-            onDropFiles(e.dataTransfer.files);
-          }}
-        >
+        <ul className={styles.list}>
           {files.length === 0 && (
-            <li className={styles.empty}>
-              {dropping ? "Drop to add" : "No files yet — or drop one here."}
-            </li>
+            <li className={styles.empty}>No files yet — or drop one on the window.</li>
           )}
           {files.map(({ resource, where }) => (
             <li key={resource.id} className={styles.row}>
