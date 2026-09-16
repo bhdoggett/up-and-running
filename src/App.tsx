@@ -75,7 +75,11 @@ export default function App() {
     loadState().then(setState);
   }, []);
 
-  // Debounced persistence: save 400ms after the last change.
+  // Debounced persistence: save 400ms after the last change, so typing costs a
+  // cheap state update rather than a file write per keystroke.
+  const latest = useRef<AppState | null>(null);
+  latest.current = state;
+
   useEffect(() => {
     if (!state) return;
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
@@ -86,6 +90,23 @@ export default function App() {
       if (saveTimer.current) window.clearTimeout(saveTimer.current);
     };
   }, [state]);
+
+  // The debounce leaves a window where a pending change hasn't reached disk.
+  // Write it out as soon as the app stops being the thing in front of you,
+  // which is what precedes closing it.
+  useEffect(() => {
+    function flush() {
+      if (!latest.current) return;
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+      saveState(latest.current).catch((e) => console.error("Save failed", e));
+    }
+    window.addEventListener("blur", flush);
+    document.addEventListener("visibilitychange", flush);
+    return () => {
+      window.removeEventListener("blur", flush);
+      document.removeEventListener("visibilitychange", flush);
+    };
+  }, []);
 
   if (!state) {
     return <div className={styles.loading}>Loading…</div>;
