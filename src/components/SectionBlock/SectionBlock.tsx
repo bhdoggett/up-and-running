@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import type { Section, Task } from "../../types";
 import { newId } from "../../types";
@@ -37,6 +37,7 @@ export default function SectionBlock({
   onMoveTask,
   onMoveSection,
 }: Props) {
+  const listRef = useRef<HTMLUListElement>(null);
   const [newTitle, setNewTitle] = useState("");
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
@@ -87,18 +88,36 @@ export default function SectionBlock({
 
   const draggingThisSection = drag?.type === "section" && drag.sectionId === section.id;
 
-  function dropOnTask(beforeTaskId: string | null) {
-    return (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (drag?.type === "task") {
-        onMoveTask(drag.taskId, drag.fromSectionId, section.id, beforeTaskId);
-      } else if (drag?.type === "section") {
-        onMoveSection(drag.sectionId, section.id);
+  // One handler for the whole list: work out the insertion point from the
+  // pointer's position against each card's midpoint. Hit-testing individual
+  // cards made the indicator flicker whenever the pointer crossed a gap.
+  function listDragOver(e: React.DragEvent) {
+    if (drag?.type !== "task") return;
+    acceptDrop(e);
+    const cards = Array.from(listRef.current?.children ?? []) as HTMLElement[];
+    let beforeTaskId: string | null = null;
+    for (const card of cards) {
+      const box = card.getBoundingClientRect();
+      if (e.clientY < box.top + box.height / 2) {
+        beforeTaskId = card.dataset.taskId ?? null;
+        break;
       }
-      setDrag(null);
-      setDropTarget(null);
-    };
+    }
+    setDropTarget({ type: "task", sectionId: section.id, beforeTaskId });
+  }
+
+  function listDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (drag?.type === "task") {
+      const before =
+        dropTarget?.type === "task" && dropTarget.sectionId === section.id
+          ? dropTarget.beforeTaskId
+          : null;
+      onMoveTask(drag.taskId, drag.fromSectionId, section.id, before);
+    }
+    setDrag(null);
+    setDropTarget(null);
   }
 
   const sectionLine =
@@ -112,13 +131,13 @@ export default function SectionBlock({
     <section
       className={`${styles.section} ${draggingThisSection ? styles.dragging : ""} ${sectionLine ? styles.sectionLine : ""}`}
       onDragOver={(e) => {
-        // Anywhere in this section that isn't a step means "put it at the end".
+        // Outside the list (header, add-step row) means "put it at the end".
         if (drag?.type === "task") {
           acceptDrop(e);
           setDropTarget({ type: "task", sectionId: section.id, beforeTaskId: null });
         }
       }}
-      onDrop={dropOnTask(null)}
+      onDrop={listDrop}
     >
       {showHeader && (
         <div
@@ -227,7 +246,12 @@ export default function SectionBlock({
           {total === 0 ? (
             <p className={styles.empty}>No steps in this section yet.</p>
           ) : (
-            <ul className={styles.list}>
+            <ul
+              className={styles.list}
+              ref={listRef}
+              onDragOver={listDragOver}
+              onDrop={listDrop}
+            >
               {section.tasks.map((task) => (
                 <TaskItem
                   key={task.id}
@@ -246,16 +270,6 @@ export default function SectionBlock({
                     setDrag(null);
                     setDropTarget(null);
                   }}
-                  onDragOver={(e) => {
-                    if (drag?.type !== "task") return;
-                    acceptDrop(e);
-                    setDropTarget({
-                      type: "task",
-                      sectionId: section.id,
-                      beforeTaskId: task.id,
-                    });
-                  }}
-                  onDrop={dropOnTask(task.id)}
                   onToggleDone={() =>
                     setTasks(
                       section.tasks.map((t) =>

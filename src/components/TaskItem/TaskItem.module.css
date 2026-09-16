@@ -234,8 +234,26 @@
 }
 .editActions {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
   margin-top: 0.2rem;
+}
+/* Delete sits far from "Done editing", in the bottom-right corner. */
+.deleteBtn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.7rem;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+}
+.deleteBtn:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 .primaryBtn {
   background: var(--accent);

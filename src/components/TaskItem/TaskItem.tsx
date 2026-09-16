@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import type { Resource, Task } from "../../types";
 import MarkdownView from "../MarkdownView/MarkdownView";
 import MarkdownEditor from "../MarkdownEditor/MarkdownEditor";
@@ -58,9 +59,25 @@ export default function TaskItem({
     onUpdate({ ...task, ...changes });
   }
 
+  // Confirm only when there's something to lose; a bare step deletes outright.
+  async function requestDelete() {
+    if (hasBody) {
+      const ok = await confirm(`Delete “${task.title}” and its details?`, {
+        title: "Delete step",
+        kind: "warning",
+        okLabel: "Delete",
+        cancelLabel: "Cancel",
+      });
+      if (!ok) return;
+    }
+    onDelete();
+  }
+
   return (
     <li
       className={`${styles.item} ${task.done ? styles.done : ""} ${dragging ? styles.dragging : ""} ${dropLine ? styles.dropLine : ""}`}
+      // The section's list handler reads this to work out the insertion point.
+      data-task-id={task.id}
       draggable
       // Only a drag begun on the grip counts, so selecting text still works.
       onDragStart={(e) => {
@@ -144,16 +161,6 @@ export default function TaskItem({
             <path d="M11.5 2.5l2 2L6 12l-2.5.5L4 10l7.5-7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
           </svg>
         </button>
-        <button
-          className={`${styles.iconBtn} ${styles.danger}`}
-          onClick={onDelete}
-          title="Delete step"
-          aria-label="Delete step"
-        >
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-            <path d="M3 4h10M6.5 4V3h3v1M4.5 4l.5 9h6l.5-9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
       </div>
 
       {/* Read view */}
@@ -231,6 +238,17 @@ export default function TaskItem({
           <div className={styles.editActions}>
             <button className={styles.primaryBtn} onClick={() => setEditing(false)}>
               Done editing
+            </button>
+            {/* Delete lives here, out of the way, so it can't be hit by accident. */}
+            <button
+              className={styles.deleteBtn}
+              onClick={requestDelete}
+              title="Delete this step"
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 4h10M6.5 4V3h3v1M4.5 4l.5 9h6l.5-9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Delete
             </button>
           </div>
         </div>
