@@ -276,9 +276,7 @@ export default function ChecklistView({ checklist, onChange }: Props) {
             setDrag(null);
             setDropTarget(null);
           }}
-        >
-          Move to the end
-        </div>
+        />
 
         <div className={styles.sectionActions}>
           <button className={styles.ghostBtn} onClick={addSection}>

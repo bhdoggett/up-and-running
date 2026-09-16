@@ -186,30 +186,28 @@
   border-style: solid;
 }
 
-/* Always present so the browser registers it as a drop target; it only becomes
-   visible and takes up space once a section is being dragged. */
+/* Catches a section dropped past the end. Always in the DOM so the browser
+   registers it as a drop target, but it shows nothing except the same
+   insertion line used everywhere else. */
 .tailZone {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   height: 0;
-  overflow: hidden;
-  opacity: 0;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius);
-  color: var(--text-faint);
-  font-size: 0.85rem;
+  position: relative;
 }
 .tailReady {
-  height: 3rem;
-  opacity: 1;
-  margin-bottom: 0.6rem;
+  /* Invisible hit area below the last section while one is in flight. */
+  height: 2.5rem;
+  margin-top: -0.5rem;
 }
-.tailActive {
-  border-style: solid;
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-soft);
+.tailActive::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0.5rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
 }
 
 .sectionActions {
