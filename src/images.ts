@@ -48,6 +48,49 @@ export function decodeMarkdownUrl(src: string): string {
   }
 }
 
+/**
+ * `![alt](dest)`, where dest is either bare or, when it contains spaces,
+ * wrapped in angle brackets: `![alt](<My Folder/shot.png>)`.
+ */
+const MARKDOWN_IMAGE_RE = /!\[([^\]]*)\]\(\s*(?:<([^>]+)>|([^)\s]+))[^)]*\)/g;
+
+/** Every image destination in a piece of Markdown, in source order. */
+export function markdownImageSources(text: string): string[] {
+  return [...text.matchAll(MARKDOWN_IMAGE_RE)].map((m) => m[2] ?? m[3]);
+}
+
+/** Swap image destinations for new ones, leaving alt text and the rest alone. */
+export function rewriteImageSources(text: string, map: Map<string, string>): string {
+  if (map.size === 0) return text;
+  return text.replace(MARKDOWN_IMAGE_RE, (whole, _alt, angle, bare) => {
+    const src = angle ?? bare;
+    const next = map.get(src);
+    return next ? whole.replace(src, next) : whole;
+  });
+}
+
+/** Pictures carried inline in the Markdown, as an imported bundle has them. */
+export function dataImageSources(text: string): string[] {
+  return markdownImageSources(text).filter((s) => s.startsWith("data:image/"));
+}
+
+/**
+ * A filename for a picture that arrived as bytes with no name of its own —
+ * from its alt text where there is one, and its own media type for the
+ * extension, which is what makes it load again once stored.
+ */
+export function dataImageName(uri: string, alt: string, index: number): string {
+  const mime = uri.slice(5, uri.indexOf(";") === -1 ? uri.indexOf(",") : uri.indexOf(";"));
+  const ext = mime.split("/")[1]?.replace(/\+xml$/, "") || "png";
+  const stem = parseImageAlt(alt).text.trim().replace(/[^\w -]+/g, "") || `image-${index + 1}`;
+  return `${stem}.${ext}`;
+}
+
+/** The alt text of each image in a piece of Markdown, in source order. */
+export function markdownImageAlts(text: string): string[] {
+  return [...text.matchAll(MARKDOWN_IMAGE_RE)].map((m) => m[1]);
+}
+
 /** `![alt](dest)`, with the destination escaped if it needs it. */
 export function imageMarkdown(alt: string, target: string): string {
   return `![${alt.replace(/[[\]]/g, "")}](${markdownUrl(target)})`;

@@ -36,6 +36,10 @@ To resize one, hover it and drag the corner; double-click the corner for its
 own size. The width is kept in the alt text (`![name|420](…)`), so it survives
 an export and stays readable as plain Markdown.
 
+Exports always carry their pictures inline, and importing puts them back into
+the image folder — so a project that has been through an export reads exactly
+like one made here, rather than hauling the pictures around inside its text.
+
 ### Sharing it
 
 | You want to… | Use | What they get |

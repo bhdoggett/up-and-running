@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   appImageRef,
+  dataImageName,
+  dataImageSources,
   imageMarkdown,
   isAppImage,
   markdownUrl,
   parseImageAlt,
+  markdownImageAlts,
+  markdownImageSources,
+  rewriteImageSources,
   setImageWidth,
 } from "./images";
-import { markdownImageSources } from "./exportShared";
 
 describe("isAppImage", () => {
   it("recognises a reference into the app's image folder", () => {
@@ -123,5 +127,65 @@ describe("image width in the alt text", () => {
     expect(setImageWidth(md, "images/b.png", 150)).toBe(
       "![one](images/a.png)\n\n![two|150](images/b.png)",
     );
+  });
+});
+
+describe("pictures carried inline in a bundle", () => {
+  const PNG = "data:image/png;base64,iVBORw0KGgo=";
+  const JPEG = "data:image/jpeg;base64,/9j/4AAQ";
+
+  it("finds only the inline ones", () => {
+    const text = `![a](${PNG})\n\n![b](images/ab12-b.png)\n\n![c](https://x.test/c.png)`;
+    expect(dataImageSources(text)).toEqual([PNG]);
+  });
+
+  it("names a picture from its alt text and its own media type", () => {
+    expect(dataImageName(PNG, "stage map", 0)).toBe("stage map.png");
+    expect(dataImageName(JPEG, "stage map", 0)).toBe("stage map.jpeg");
+    expect(dataImageName("data:image/svg+xml;base64,PD8=", "plan", 0)).toBe("plan.svg");
+  });
+
+  it("falls back to a numbered name when there is no alt text", () => {
+    expect(dataImageName(PNG, "", 2)).toBe("image-3.png");
+    expect(dataImageName(PNG, "  ", 0)).toBe("image-1.png");
+  });
+
+  it("keeps a width out of the filename", () => {
+    expect(dataImageName(PNG, "stage map|420", 0)).toBe("stage map.png");
+  });
+
+  it("copes with a data URI that carries no media type", () => {
+    expect(dataImageName("data:,hello", "note", 0)).toBe("note.png");
+  });
+
+  it("reads the alt text of every picture, in order", () => {
+    expect(markdownImageAlts("![one](a.png) ![two|300](b.png)")).toEqual([
+      "one",
+      "two|300",
+    ]);
+  });
+});
+
+describe("rewriteImageSources", () => {
+  const PNG = "data:image/png;base64,iVBORw0KGgo=";
+
+  it("swaps a destination and leaves the alt text alone", () => {
+    const text = `![stage map|420](${PNG})`;
+    const map = new Map([[PNG, "images/ab12-map.png"]]);
+    expect(rewriteImageSources(text, map)).toBe("![stage map|420](images/ab12-map.png)");
+  });
+
+  it("swaps every use of the same picture", () => {
+    const text = `![a](${PNG})\n\n![b](${PNG})`;
+    const map = new Map([[PNG, "images/ab12-map.png"]]);
+    expect(rewriteImageSources(text, map)).toBe(
+      "![a](images/ab12-map.png)\n\n![b](images/ab12-map.png)",
+    );
+  });
+
+  it("leaves untouched what it has no replacement for", () => {
+    const text = "![a](images/a.png)";
+    expect(rewriteImageSources(text, new Map())).toBe(text);
+    expect(rewriteImageSources(text, new Map([["images/b.png", "x"]]))).toBe(text);
   });
 });

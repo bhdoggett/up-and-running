@@ -3,6 +3,14 @@ import { readTextFile, writeFile, mkdir } from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import type { Checklist, Doc, Project, Resource, Task } from "./types";
 import { newId, withSections, normalizeProject } from "./types";
+import {
+  dataImageName,
+  dataImageSources,
+  markdownImageAlts,
+  markdownImageSources,
+  rewriteImageSources,
+  saveImage,
+} from "./images";
 
 function bytesFromDataUri(uri: string): Uint8Array {
   const comma = uri.indexOf(",");
@@ -39,6 +47,14 @@ function asChecklist(raw: unknown): Checklist {
   return c;
 }
 
+/** The attachments folder, made only when something in the bundle needs it. */
+async function attachmentsDirFor(resources: Resource[]): Promise<string | null> {
+  if (!resources.some((r) => typeof r.data === "string")) return null;
+  const dir = await join(await appDataDir(), "attachments");
+  await mkdir(dir, { recursive: true });
+  return dir;
+}
+
 // Regenerate a resource's id and, if it carries bundled bytes, write them to a
 // real file under `dir` so the OS can open it (clearing the `data` field).
 async function restoreResource(r: Resource, dir: string | null): Promise<Resource> {
@@ -55,6 +71,36 @@ async function restoreResource(r: Resource, dir: string | null): Promise<Resourc
   return base;
 }
 
+/**
+ * An imported bundle carries its pictures inline, as base64. Write them back
+ * into the image folder and point the Markdown at them, so a project that has
+ * been through an export reads exactly like one made here: short references,
+ * one copy per picture however many places use it, and a saved state that
+ * isn't carrying image blobs around on every keystroke.
+ *
+ * A picture that can't be written keeps its inline copy — it still displays,
+ * which beats losing it.
+ */
+async function restoreMarkdownImages(text: string): Promise<string> {
+  const uris = dataImageSources(text);
+  if (uris.length === 0) return text;
+
+  const alts = markdownImageAlts(text);
+  const sources = markdownImageSources(text);
+  const map = new Map<string, string>();
+
+  for (const [i, uri] of uris.entries()) {
+    if (map.has(uri)) continue; // the same picture used twice
+    try {
+      const alt = alts[sources.indexOf(uri)] ?? "";
+      map.set(uri, await saveImage(bytesFromDataUri(uri), dataImageName(uri, alt, i)));
+    } catch (e) {
+      console.error("Could not restore an image from the bundle", e);
+    }
+  }
+  return rewriteImageSources(text, map);
+}
+
 // Turn validated raw data into a new, ready-to-use checklist: fresh ids,
 // progress reset, bundled attachments written back to disk. Shared by every
 // import path (file, pasted JSON, AI-assisted).
@@ -67,20 +113,12 @@ async function buildImportedChecklist(raw: unknown): Promise<Checklist> {
     ...checklist.sections.flatMap((s) => s.tasks.map((t) => t.resources ?? [])),
   ];
 
-  // Create the attachments dir once, only if something is bundled.
-  const hasBundled = resourceLists.some((list) =>
-    list.some((r) => typeof r.data === "string"),
-  );
-  let dir: string | null = null;
-  if (hasBundled) {
-    dir = await join(await appDataDir(), "attachments");
-    await mkdir(dir, { recursive: true });
-  }
+  const dir = await attachmentsDirFor(resourceLists.flat());
 
   return {
     id: newId(),
     name: checklist.name,
-    description: checklist.description ?? "",
+    description: await restoreMarkdownImages(checklist.description ?? ""),
     resources: await Promise.all(
       checklist.resources.map((r) => restoreResource(r, dir)),
     ),
@@ -93,7 +131,7 @@ async function buildImportedChecklist(raw: unknown): Promise<Checklist> {
           section.tasks.map(async (task): Promise<Task> => ({
             id: newId(),
             title: task.title,
-            details: task.details ?? "",
+            details: await restoreMarkdownImages(task.details ?? ""),
             done: false,
             resources: await Promise.all(
               (task.resources ?? []).map((r) => restoreResource(r, dir)),
@@ -110,23 +148,20 @@ function isDocPayload(raw: unknown): boolean {
   return !!r && (r.itemKind === "doc" || typeof r.body === "string");
 }
 
-function buildImportedDoc(raw: unknown): Doc {
+async function buildImportedDoc(raw: unknown): Promise<Doc> {
   const d = raw as Doc;
   if (typeof d.name !== "string") {
     throw new Error("That file doesn't contain a valid doc.");
   }
+  const resources = Array.isArray(d.resources) ? d.resources : [];
+  // Its attachments are written back to disk too — they used to be dropped,
+  // leaving a link to a file that only existed on the exporting machine.
+  const dir = await attachmentsDirFor(resources);
   return {
     id: newId(),
     name: d.name,
-    body: typeof d.body === "string" ? d.body : "",
-    resources: Array.isArray(d.resources)
-      ? d.resources.map((r) => ({
-          id: newId(),
-          label: r.label,
-          kind: r.kind,
-          target: r.target,
-        }))
-      : [],
+    body: await restoreMarkdownImages(typeof d.body === "string" ? d.body : ""),
+    resources: await Promise.all(resources.map((r) => restoreResource(r, dir))),
   };
 }
 
@@ -147,13 +182,9 @@ async function buildImportedProject(raw: unknown): Promise<Project> {
   const checklists = await Promise.all(
     p.checklists.map((c) => buildImportedChecklist(c)),
   );
-  const docs = p.docs.map((d) => buildImportedDoc(d));
-  const files = p.files.map((f) => ({
-    id: newId(),
-    label: f.label,
-    kind: f.kind,
-    target: f.target,
-  }));
+  const docs = await Promise.all(p.docs.map((d) => buildImportedDoc(d)));
+  const dir = await attachmentsDirFor(p.files);
+  const files = await Promise.all(p.files.map((f) => restoreResource(f, dir)));
   return { id: newId(), name: p.name, checklists, docs, files };
 }
 
@@ -177,7 +208,7 @@ export async function importItemFromFile(): Promise<ImportedItem | null> {
     return { kind: "project", project: await buildImportedProject(raw) };
   }
   if (isDocPayload(raw)) {
-    return { kind: "doc", doc: buildImportedDoc(raw) };
+    return { kind: "doc", doc: await buildImportedDoc(raw) };
   }
   return { kind: "checklist", checklist: await buildImportedChecklist(raw) };
 }
@@ -186,7 +217,7 @@ export async function importItemFromFile(): Promise<ImportedItem | null> {
 // Tolerates a ```json fence and surrounding prose by extracting the outer object.
 export async function importItemFromJson(text: string): Promise<ImportedItem> {
   const raw = parseLooseJson(text);
-  if (isDocPayload(raw)) return { kind: "doc", doc: buildImportedDoc(raw) };
+  if (isDocPayload(raw)) return { kind: "doc", doc: await buildImportedDoc(raw) };
   return { kind: "checklist", checklist: await buildImportedChecklist(raw) };
 }
 

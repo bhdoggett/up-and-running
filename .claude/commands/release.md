@@ -92,14 +92,35 @@ CI. Publishing is therefore a separate final step.
    `_aarch64.dmg`, `_x64.dmg`, `_x64-setup.exe`, `_x64_en-US.msi`, and two
    `.app.tar.gz` updater bundles.
 
-10. **Publish.** The release is a draft until this runs — a draft has no public
+10. **Write the release notes.** `tauri-action` creates the release with a
+    placeholder body ("See the assets to download…"), which tells a reader
+    nothing about what changed. Write the notes (see below), put them in a
+    file, and set them on the release:
+
+    ```sh
+    gh release edit v<VERSION> --notes-file <path>
+    ```
+
+    Write the file outside the repo — a scratch directory, not the working
+    tree — so it isn't committed by accident. Do this *before* publishing, so
+    the release is never visible without its notes. To check what's there:
+
+    ```sh
+    gh release view v<VERSION> --json body --jq .body
+    ```
+
+11. **Publish.** The release is a draft until this runs — a draft has no public
     download page, so another machine can't fetch it:
 
     ```sh
     gh release edit v<VERSION> --draft=false --latest
     ```
 
-11. **Report** the release URL, and mention that the builds are unsigned: on
+    Confirm with `gh release list --limit 3`: the row should read "Latest".
+    Don't verify with `--json isLatest` — that field doesn't exist in this
+    `gh`, and the command fails even though the edit succeeded.
+
+12. **Report** the release URL, and mention that the builds are unsigned: on
     macOS a downloader needs
     `xattr -dr com.apple.quarantine "/Applications/Up and Running.app"`;
     on Windows, More info → Run anyway.
@@ -120,7 +141,61 @@ version instead.
 
 ## Release notes
 
-Group commits since the previous tag into user-facing bullets — what changed
-for someone using the app, not the commit subjects. Fixes to things the user
-reported are worth naming explicitly. Omit refactors, dead-code removal and
-test-only changes unless they change behaviour.
+Read every commit since the previous tag (`git log <prev-tag>..HEAD`, bodies
+included — a single commit here often carries a whole session's work, and the
+subject line names only part of it). Then write for the person downloading the
+build, who has never seen this repository.
+
+**Say what is different to use.** Not "fix image resolution" but "pictures in
+explanations now load; they were silently failing when the filename contained
+a space". Name the thing they'd have noticed. A fix for something the user
+reported is worth stating plainly rather than softening.
+
+**Group by what it affects**, under `###` headings, in the order someone
+would care about: new capabilities, then fixes, then smaller changes. Drop the
+headings entirely for a release small enough that three bullets cover it.
+Don't invent a category for a lone bullet.
+
+**Leave out** refactors, dead-code removal, dependency bumps and test-only
+changes — unless they change what happens on screen. One commit can produce
+bullets under several headings, and several commits can collapse into one
+bullet; the commit boundaries mean nothing to a reader.
+
+**Always end with the install note**, since these builds are unsigned and a
+first-time downloader will otherwise think the app is broken:
+
+```markdown
+### Installing
+
+Unsigned builds. On macOS, after dragging to Applications:
+`xattr -dr com.apple.quarantine "/Applications/Up and Running.app"`.
+On Windows: More info → Run anyway.
+```
+
+A worked example, from v0.2.0:
+
+```markdown
+### Pictures in explanations
+
+- Drop an image into any step, doc, or description and it is copied into the
+  project, so it keeps working when the project is opened on another machine.
+- Resize a picture by dragging its corner, or by writing a width into the
+  Markdown (`![name|420](…)`). The size survives an HTML export.
+
+### Fixes
+
+- Pictures referenced by a path containing a space never loaded. They do now —
+  including macOS screenshots, whose names contain an unusual space character.
+- A picture that genuinely can't be found now says so and names what it looked
+  for, instead of leaving a blank gap.
+
+### Editing a checklist
+
+- Click a step's title to rename it in place; the arrow alone opens the
+  explanation, and Cmd+Enter closes whichever editor is open.
+- Only one step's editor stays open at a time.
+- A section with no name can be named — previously there was nothing to click.
+```
+
+The tag message is a different, shorter thing: a paragraph or two for someone
+reading `git log`. Don't paste the release notes into it.

@@ -2,16 +2,12 @@ import { readFile, stat } from "@tauri-apps/plugin-fs";
 import type { Checklist, Doc, Project, Resource } from "./types";
 import { allTasks } from "./types";
 import { isLocalPath } from "./components/MarkdownView/MarkdownView";
-import { appImagePath, isAppImage } from "./images";
-
-// `![alt](dest)`, where dest is either bare or, when it contains spaces,
-// wrapped in angle brackets: `![alt](<My Folder/shot.png>)`.
-const MARKDOWN_IMAGE_RE = /!\[[^\]]*\]\(\s*(?:<([^>]+)>|([^)\s]+))[^)]*\)/g;
-
-/** Every image destination in a piece of Markdown, in source order. */
-export function markdownImageSources(text: string): string[] {
-  return [...text.matchAll(MARKDOWN_IMAGE_RE)].map((m) => m[1] ?? m[2]);
-}
+import {
+  appImagePath,
+  isAppImage,
+  markdownImageSources,
+  rewriteImageSources,
+} from "./images";
 
 function mimeFromExt(path: string): string {
   const ext = path.split(".").pop()?.toLowerCase();
@@ -125,15 +121,6 @@ async function imageDataUris(sources: string[]): Promise<Map<string, string>> {
   return map;
 }
 
-function inlineImages(text: string, map: Map<string, string>): string {
-  if (map.size === 0) return text;
-  return text.replace(MARKDOWN_IMAGE_RE, (whole, angle, bare) => {
-    const src = angle ?? bare;
-    const uri = map.get(src);
-    return uri ? whole.replace(src, uri) : whole;
-  });
-}
-
 // Return a deep copy of the checklist where every local image referenced in
 // the description or a step's Markdown is replaced with an inline base64 data
 // URI, so the exported file works on a machine that has none of the originals.
@@ -146,12 +133,12 @@ async function embedLocalImages(checklist: Checklist): Promise<Checklist> {
 
   return {
     ...checklist,
-    description: inlineImages(checklist.description, map),
+    description: rewriteImageSources(checklist.description, map),
     sections: checklist.sections.map((section) => ({
       ...section,
       tasks: section.tasks.map((task) => ({
         ...task,
-        details: inlineImages(task.details, map),
+        details: rewriteImageSources(task.details, map),
       })),
     })),
   };
@@ -206,7 +193,7 @@ export async function prepareDocPortable(
 
   return {
     ...doc,
-    body: inlineImages(doc.body, map),
+    body: rewriteImageSources(doc.body, map),
     resources: includeAttachments
       ? await embedResourceList(doc.resources)
       : doc.resources,
