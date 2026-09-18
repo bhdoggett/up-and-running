@@ -13,10 +13,12 @@ import { loadState, saveState } from "./storage";
 import { importItemFromFile, type ImportedItem } from "./importFile";
 import { openLink } from "./appLinks";
 import { contentAddressedName } from "./attachments";
+import { initImages } from "./images";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { mkdir, writeFile } from "@tauri-apps/plugin-fs";
 import { exportProjectToUar } from "./exportHtml";
 import { LibraryProvider } from "./library";
+import { initZoom } from "./zoom";
 import { message, open as openDialog, confirm } from "@tauri-apps/plugin-dialog";
 import Sidebar from "./components/Sidebar/Sidebar";
 import AiImportDialog from "./components/AiImportDialog/AiImportDialog";
@@ -73,10 +75,17 @@ export default function App() {
     document.body.style.userSelect = "none";
   }
 
-  // Load persisted state once on startup.
+  // Load persisted state once on startup. Markdown pictures resolve against
+  // the image folder, so find it before the first render of any content.
   useEffect(() => {
-    loadState().then(setState);
+    initImages()
+      .catch((e) => console.error("Could not open the image folder", e))
+      .then(() => loadState())
+      .then(setState);
   }, []);
+
+  // Restore the saved zoom and follow View > Zoom from then on.
+  useEffect(() => initZoom(), []);
 
   // Debounced persistence: save 400ms after the last change, so typing costs a
   // cheap state update rather than a file write per keystroke.

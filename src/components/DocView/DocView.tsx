@@ -3,9 +3,11 @@ import type { Doc } from "../../types";
 import MarkdownView from "../MarkdownView/MarkdownView";
 import MarkdownEditor from "../MarkdownEditor/MarkdownEditor";
 import ResourceList from "../ResourceList/ResourceList";
-import { resolveAppImage, openLink } from "../../appLinks";
+import { resolveAppImage, openMarkdownLink } from "../../appLinks";
 import { exportDocToHtml } from "../../exportHtml";
 import { useNameMap } from "../../library";
+import { isCommandEnter } from "../../keys";
+import { setImageWidth } from "../../images";
 import styles from "./DocView.module.css";
 
 interface Props {
@@ -93,18 +95,30 @@ export default function DocView({ doc, onChange }: Props) {
         </div>
 
         {editing ? (
-          <MarkdownEditor
-            value={doc.body}
-            onChange={(body) => onChange({ ...doc, body })}
-            placeholder="Explain how it works… (Markdown: headings, bullets, images, links)"
-          />
+          // Cmd+Enter anywhere in the editor is the same as clicking Done.
+          <div
+            onKeyDown={(e) => {
+              if (!isCommandEnter(e)) return;
+              e.preventDefault();
+              setEditing(false);
+            }}
+          >
+            <MarkdownEditor
+              value={doc.body}
+              onChange={(body) => onChange({ ...doc, body })}
+              placeholder="Explain how it works… (Markdown: headings, bullets, images, links)"
+            />
+          </div>
         ) : (
           <div className={styles.body}>
             {doc.body.trim() ? (
               <MarkdownView
                 content={doc.body}
                 resolveImage={resolveAppImage}
-                onLinkClick={openLink}
+                onLinkClick={openMarkdownLink}
+                onImageResize={(target, width) =>
+                  onChange({ ...doc, body: setImageWidth(doc.body, target, width) })
+                }
               />
             ) : (
               <p className={styles.empty}>

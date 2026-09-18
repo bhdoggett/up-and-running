@@ -30,6 +30,9 @@ interface Props {
   onMoveSection: (sectionId: string, beforeSectionId: string | null) => void;
   /** Broadcast from "collapse all" / "expand all". */
   pulse: ExpandPulse;
+  /** The one step being edited anywhere in the checklist, if any. */
+  editingTaskId: string | null;
+  setEditingTaskId: (id: string | null) => void;
 }
 
 export default function SectionBlock({
@@ -46,6 +49,8 @@ export default function SectionBlock({
   onMoveTask,
   onMoveSection,
   pulse,
+  editingTaskId,
+  setEditingTaskId,
 }: Props) {
   const listRef = useRef<HTMLUListElement>(null);
   const [newTitle, setNewTitle] = useState("");
@@ -249,9 +254,15 @@ export default function SectionBlock({
                   <button
                     className={styles.nameBtn}
                     onClick={startRename}
-                    title="Click to rename"
+                    title={section.name ? "Click to rename" : "Click to name this section"}
                   >
-                    <span className={styles.name}>{section.name}</span>
+                    {/* A nameless section would otherwise be a zero-width
+                        button — nothing left to click to give it a name. */}
+                    <span
+                      className={`${styles.name} ${section.name ? "" : styles.unnamed}`}
+                    >
+                      {section.name || "Name this section"}
+                    </span>
                   </button>
                 )}
                 <button
@@ -316,6 +327,13 @@ export default function SectionBlock({
                   task={task}
                   number={startNumber + i}
                   pulse={pulse}
+                  editing={editingTaskId === task.id}
+                  // Opening one editor closes whichever was open before.
+                  onEditingChange={(open) =>
+                    setEditingTaskId(
+                      open ? task.id : editingTaskId === task.id ? null : editingTaskId,
+                    )
+                  }
                   dragging={drag?.type === "task" && drag.taskId === task.id}
                   dropLine={
                     dropTarget?.type === "task" &&

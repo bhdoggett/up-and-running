@@ -6,9 +6,9 @@
   background: var(--bg);
 }
 .inner {
-  max-width: 720px;
+  max-width: var(--reading-max);
   margin: 0 auto;
-  padding: 1.6rem 1.4rem 3rem;
+  padding: 1.6rem var(--content-pad) 3rem;
 }
 
 .header {

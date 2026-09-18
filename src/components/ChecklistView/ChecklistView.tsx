@@ -4,13 +4,15 @@ import { newId, allTasks } from "../../types";
 import { exportChecklistToHtml } from "../../exportHtml";
 import { useNameMap } from "../../library";
 import { acceptDrop, type Drag, type DropTarget } from "../../dragState";
+import { isCommandEnter } from "../../keys";
+import { setImageWidth } from "../../images";
 import { moveTask, moveSection } from "../../reorder";
 import { NO_PULSE, type ExpandPulse } from "../../viewState";
 import SectionBlock from "../SectionBlock/SectionBlock";
 import ResourceList from "../ResourceList/ResourceList";
 import MarkdownView from "../MarkdownView/MarkdownView";
 import MarkdownEditor from "../MarkdownEditor/MarkdownEditor";
-import { resolveAppImage, openLink } from "../../appLinks";
+import { resolveAppImage, openMarkdownLink } from "../../appLinks";
 import styles from "./ChecklistView.module.css";
 
 interface Props {
@@ -25,6 +27,9 @@ export default function ChecklistView({ checklist, onChange }: Props) {
   const [drag, setDrag] = useState<Drag>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget>(null);
   const [editingDesc, setEditingDesc] = useState(false);
+  // One editor at a time across the whole checklist, so a long list can't end
+  // up with half a dozen editors open behind each other.
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [pulse, setPulse] = useState<ExpandPulse>(NO_PULSE);
   const names = useNameMap();
 
@@ -187,6 +192,26 @@ export default function ChecklistView({ checklist, onChange }: Props) {
                   Uncheck all
                 </button>
               )}
+              {/* Whole-checklist controls, together at the top rather than
+                  stranded past the last section. */}
+              {total > 0 && (
+                <>
+                  <button
+                    className={styles.uncheckAll}
+                    onClick={() => setAllCollapsed(true)}
+                    title="Close every section and step"
+                  >
+                    Collapse all
+                  </button>
+                  <button
+                    className={styles.uncheckAll}
+                    onClick={() => setAllCollapsed(false)}
+                    title="Open every section and step"
+                  >
+                    Expand all
+                  </button>
+                </>
+              )}
             </div>
             {!hasDescription && !editingDesc && (
               <button
@@ -197,10 +222,6 @@ export default function ChecklistView({ checklist, onChange }: Props) {
                 + Description
               </button>
             )}
-            <ResourceList
-              resources={checklist.resources}
-              onChange={(resources) => onChange({ ...checklist, resources })}
-            />
           </div>
           {/* One artefact per item: a read-only web page. Editable bundles are
               .uar, and those are whole projects. */}
@@ -217,7 +238,14 @@ export default function ChecklistView({ checklist, onChange }: Props) {
         </div>
 
         {editingDesc ? (
-          <div className={styles.descEdit}>
+          <div
+            className={styles.descEdit}
+            onKeyDown={(e) => {
+              if (!isCommandEnter(e)) return;
+              e.preventDefault();
+              setEditingDesc(false);
+            }}
+          >
             <MarkdownEditor
               value={checklist.description}
               onChange={(description) => onChange({ ...checklist, description })}
@@ -235,7 +263,13 @@ export default function ChecklistView({ checklist, onChange }: Props) {
               <MarkdownView
                 content={checklist.description}
                 resolveImage={resolveAppImage}
-                onLinkClick={openLink}
+                onLinkClick={openMarkdownLink}
+                onImageResize={(target, width) =>
+                  onChange({
+                    ...checklist,
+                    description: setImageWidth(checklist.description, target, width),
+                  })
+                }
               />
               <button
                 className={styles.descEditBtn}
@@ -250,6 +284,15 @@ export default function ChecklistView({ checklist, onChange }: Props) {
             </div>
           )
         )}
+
+        {/* Below the description: the intro reads first, then what it points
+            you at. */}
+        <div className={styles.resourceRow}>
+          <ResourceList
+            resources={checklist.resources}
+            onChange={(resources) => onChange({ ...checklist, resources })}
+          />
+        </div>
 
         {checklist.sections.map((section, index) => (
           <SectionBlock
@@ -271,6 +314,8 @@ export default function ChecklistView({ checklist, onChange }: Props) {
             dropTarget={dropTarget}
             setDropTarget={setDropTarget}
             pulse={pulse}
+            editingTaskId={editingTaskId}
+            setEditingTaskId={setEditingTaskId}
             onMoveTask={handleMoveTask}
             onMoveSection={handleMoveSection}
           />
@@ -307,17 +352,6 @@ export default function ChecklistView({ checklist, onChange }: Props) {
           <button className={styles.ghostBtn} onClick={addSection}>
             + Add section
           </button>
-          {/* Useful with one section too, now that these reach the steps. */}
-          {total > 0 && (
-            <>
-              <button className={styles.ghostBtn} onClick={() => setAllCollapsed(true)}>
-                Collapse all
-              </button>
-              <button className={styles.ghostBtn} onClick={() => setAllCollapsed(false)}>
-                Expand all
-              </button>
-            </>
-          )}
         </div>
       </div>
 

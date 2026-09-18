@@ -4,9 +4,11 @@ import type { Resource, Task } from "../../types";
 import MarkdownView from "../MarkdownView/MarkdownView";
 import MarkdownEditor from "../MarkdownEditor/MarkdownEditor";
 import ResourceList from "../ResourceList/ResourceList";
-import { resolveAppImage, openLink } from "../../appLinks";
+import { resolveAppImage, openLink, openMarkdownLink } from "../../appLinks";
 import { useLibrary, useResourceLabel, isInternal } from "../../library";
 import type { ExpandPulse } from "../../viewState";
+import { isCommandEnter } from "../../keys";
+import { setImageWidth } from "../../images";
 import styles from "./TaskItem.module.css";
 
 interface Props {
@@ -18,6 +20,10 @@ interface Props {
   number: number;
   /** Broadcast from "collapse all" / "expand all". */
   pulse: ExpandPulse;
+  /** Whether this step's editor is the open one. Owned by the checklist, so
+   *  that only one step can be edited at a time. */
+  editing: boolean;
+  onEditingChange: (open: boolean) => void;
   dragging?: boolean;
   /** Draw an insertion line above this step. */
   dropLine?: boolean;
@@ -34,6 +40,8 @@ export default function TaskItem({
   onDelete,
   number,
   pulse,
+  editing,
+  onEditingChange,
   dragging = false,
   dropLine = false,
   onDragStart,
@@ -48,7 +56,8 @@ export default function TaskItem({
   // the section and this step mounts *after* the broadcast. Reading it here
   // means such a step opens on the same click rather than the next one.
   const [expanded, setExpanded] = useState(pulse.count > 0 && pulse.open);
-  const [editing, setEditing] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
   const { navigate, fileDrag } = useLibrary();
   const labelFor = useResourceLabel();
 
@@ -61,8 +70,23 @@ export default function TaskItem({
     if (pulse.count === seenPulse.current) return;
     seenPulse.current = pulse.count;
     setExpanded(pulse.open);
-    if (!pulse.open) setEditing(false);
+    if (!pulse.open) onEditingChange(false);
   }, [pulse]);
+
+  // The editor needs the details visible to make sense of what it is editing.
+  function toggleEditing() {
+    onEditingChange(!editing);
+    if (!editing) setExpanded(true);
+  }
+
+  function startTitleEdit() {
+    setTitleDraft(task.title);
+    setEditingTitle(true);
+  }
+  function commitTitle() {
+    patch({ title: titleDraft.trim() || task.title });
+    setEditingTitle(false);
+  }
 
   function openResource(r: Resource) {
     if (isInternal(r.kind)) {
@@ -151,18 +175,43 @@ export default function TaskItem({
             )}
           </span>
         </label>
-        <button
-          className={styles.titleBtn}
-          onClick={() => hasBody && setExpanded((v) => !v)}
-          aria-expanded={expanded}
-        >
-          <span className={`${styles.title} ${task.done ? styles.done : ""}`}>
-            {task.title}
-          </span>
-          {task.resources.length > 0 && (
-            <span className={styles.count}>{task.resources.length}</span>
-          )}
-          {hasBody && (
+        {/* Clicking the words rewrites the words — the same gesture as a
+            section name. The explanation is the arrow's job, and the pencil
+            opens the full editor. */}
+        {editingTitle ? (
+          <input
+            className={styles.titleInput}
+            value={titleDraft}
+            autoFocus
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onBlur={commitTitle}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitTitle();
+              if (e.key === "Escape") setEditingTitle(false);
+            }}
+          />
+        ) : (
+          <button
+            className={styles.titleBtn}
+            onClick={startTitleEdit}
+            title="Click to rename this step"
+          >
+            <span className={`${styles.title} ${task.done ? styles.done : ""}`}>
+              {task.title}
+            </span>
+          </button>
+        )}
+        {/* Sits against the title, not out at the margin — it belongs to the
+            words it opens. Hidden while editing: the details are already open
+            below, and the editor is what closes them. */}
+        {hasBody && !editing && (
+          <button
+            className={styles.chevronBtn}
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            title={expanded ? "Hide the explanation" : "Show the explanation"}
+            aria-label={expanded ? "Hide the explanation" : "Show the explanation"}
+          >
             <svg
               className={`${styles.chevron} ${expanded ? styles.open : ""}`}
               width="12"
@@ -173,18 +222,21 @@ export default function TaskItem({
             >
               <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-          )}
-        </button>
+          </button>
+        )}
+
+        {/* Pushes the tally and the pencil out to the right margin. */}
+        <span className={styles.spacer} />
+        {task.resources.length > 0 && (
+          <span className={styles.count}>{task.resources.length}</span>
+        )}
 
         {/* A toggle, not a confirm: edits save as they are typed, so this only
             opens and closes the editor. Shown switched on while it is open —
             never a tick, which in this app means the step itself is done. */}
         <button
           className={`${styles.iconBtn} ${editing ? styles.iconBtnActive : ""}`}
-          onClick={() => {
-            setEditing((v) => !v);
-            setExpanded(true);
-          }}
+          onClick={toggleEditing}
           aria-pressed={editing}
           title={editing ? "Close the editor" : "Edit step"}
           aria-label={editing ? "Close the editor" : "Edit step"}
@@ -214,7 +266,10 @@ export default function TaskItem({
               <MarkdownView
                 content={task.details}
                 resolveImage={resolveAppImage}
-                onLinkClick={openLink}
+                onLinkClick={openMarkdownLink}
+                onImageResize={(target, width) =>
+                  patch({ details: setImageWidth(task.details, target, width) })
+                }
               />
             </div>
           )}
@@ -250,16 +305,16 @@ export default function TaskItem({
 
       {/* Edit view */}
       {editing && (
-        <div className={styles.editBody}>
-          <div>
-            <div className={styles.label}>Step title</div>
-            <input
-              className={styles.input}
-              value={task.title}
-              onChange={(e) => patch({ title: e.target.value })}
-              placeholder="What needs to be done?"
-            />
-          </div>
+        <div
+          className={styles.editBody}
+          // Cmd+Enter anywhere in here is the same as "Done editing".
+          onKeyDown={(e) => {
+            if (!isCommandEnter(e)) return;
+            e.preventDefault();
+            onEditingChange(false);
+          }}
+        >
+          {/* No title field here — the title is edited by clicking it. */}
           <div>
             <div className={styles.label}>Explanation</div>
             <MarkdownEditor
@@ -275,7 +330,7 @@ export default function TaskItem({
           />
 
           <div className={styles.editActions}>
-            <button className={styles.primaryBtn} onClick={() => setEditing(false)}>
+            <button className={styles.primaryBtn} onClick={() => onEditingChange(false)}>
               Done editing
             </button>
             {/* Delete lives here, out of the way, so it can't be hit by accident. */}

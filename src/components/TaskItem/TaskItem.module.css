@@ -113,7 +113,9 @@
 }
 
 .titleBtn {
-  flex: 1;
+  /* Only as wide as its words, so the arrow sits against the title rather
+     than out at the far margin. */
+  flex: 0 1 auto;
   min-width: 0;
   display: flex;
   align-items: baseline;
@@ -129,6 +131,23 @@
 .title {
   min-width: 0;
   transition: color 0.16s ease;
+}
+
+/* Rename in place: same size and position as the title it replaces, so the
+   row doesn't shift when you click into it. */
+.titleInput {
+  flex: 0 1 26rem;
+  min-width: 0;
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 500;
+  color: var(--paper);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.4rem;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
 }
 
 /* The one loud moment: a completed step is struck and stood down. */
@@ -147,6 +166,23 @@
   opacity: 0.85;
 }
 
+/* Its own control now that the title edits instead of expanding: a small
+   target beside the words, not a whole row. */
+.chevronBtn {
+  flex: none;
+  align-self: center;
+  background: none;
+  border: none;
+  padding: 0.25rem 0.3rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--faint);
+}
+.chevronBtn:hover {
+  background: var(--rule);
+  color: var(--paper);
+}
+
 .chevron {
   color: var(--faint);
   transition: transform 0.15s ease;
@@ -155,6 +191,11 @@
 }
 .chevron.open {
   transform: rotate(90deg);
+}
+
+.spacer {
+  flex: 1;
+  min-width: 0.5rem;
 }
 
 /* Count of attached links/files — a tally mark, not a pill. */
@@ -241,18 +282,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-}
-.input {
-  width: 100%;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 0.6rem;
-  background: var(--surface);
-}
-.input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .label {
   font-size: 0.85rem;

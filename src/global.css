@@ -27,6 +27,16 @@
   --radius: 3px;
   --radius-sm: 2px;
 
+  /* Content follows the window instead of sitting in a fixed column, up to a
+     cap. Checklists take the wider one — a row is [grip][number][title] plus
+     controls, and uses the room. Prose stops sooner: a line that spans a wide
+     display is hard to track back from. */
+  --content-max: 1160px;
+  --reading-max: 900px;
+  /* Gutters open up with the window, so content at the cap is not pinned to
+     the edges of the pane. */
+  --content-pad: clamp(1.4rem, 3vw, 2.6rem);
+
   /* Rows read [grip][number][title]. The grip column plus the row gap is how
      far in the number column starts — shared so anything that needs to line up
      with the numbers (the add-step row) stays in step with it. */

@@ -2,11 +2,35 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { openPath, openUrl } from "@tauri-apps/plugin-opener";
 import { message } from "@tauri-apps/plugin-dialog";
 import { isLocalPath } from "./components/MarkdownView/MarkdownView";
+import {
+  IMAGE_DIR,
+  decodeMarkdownUrl,
+  ensureImages,
+  imagesDirSync,
+  isAppImage,
+} from "./images";
 
-// In-app image resolution: local file paths go through Tauri's asset protocol
-// so the webview can load them; web/data URLs pass through unchanged.
+// In-app image resolution: pictures stored in the app's own image folder are
+// found by name, other local paths go through Tauri's asset protocol so the
+// webview can load them, and web/data URLs pass through unchanged.
 export function resolveAppImage(src: string): string {
-  return isLocalPath(src) ? convertFileSrc(src) : src;
+  if (isAppImage(src)) {
+    const dir = imagesDirSync();
+    if (!dir) {
+      // Not known yet — start finding it; the view redraws when it lands.
+      ensureImages();
+      return src;
+    }
+    const name = decodeMarkdownUrl(src.slice(IMAGE_DIR.length + 1));
+    return convertFileSrc(`${dir}/${name}`);
+  }
+  return isLocalPath(src) ? convertFileSrc(decodeMarkdownUrl(src)) : src;
+}
+
+// A link inside Markdown, whose destination arrives percent-encoded. Web
+// addresses are left as they came; a file path is decoded back to its name.
+export function openMarkdownLink(href: string): Promise<void> {
+  return openLink(isLocalPath(href) ? decodeMarkdownUrl(href) : href);
 }
 
 // Add a scheme to bare web addresses ("youtube.com/x" -> "https://youtube.com/x")

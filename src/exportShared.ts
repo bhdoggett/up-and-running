@@ -2,8 +2,16 @@ import { readFile, stat } from "@tauri-apps/plugin-fs";
 import type { Checklist, Doc, Project, Resource } from "./types";
 import { allTasks } from "./types";
 import { isLocalPath } from "./components/MarkdownView/MarkdownView";
+import { appImagePath, isAppImage } from "./images";
 
-const MARKDOWN_IMAGE_RE = /!\[[^\]]*\]\(\s*([^)\s]+)[^)]*\)/g;
+// `![alt](dest)`, where dest is either bare or, when it contains spaces,
+// wrapped in angle brackets: `![alt](<My Folder/shot.png>)`.
+const MARKDOWN_IMAGE_RE = /!\[[^\]]*\]\(\s*(?:<([^>]+)>|([^)\s]+))[^)]*\)/g;
+
+/** Every image destination in a piece of Markdown, in source order. */
+export function markdownImageSources(text: string): string[] {
+  return [...text.matchAll(MARKDOWN_IMAGE_RE)].map((m) => m[1] ?? m[2]);
+}
 
 function mimeFromExt(path: string): string {
   const ext = path.split(".").pop()?.toLowerCase();
@@ -94,39 +102,56 @@ async function toDataUri(path: string): Promise<string | null> {
   }
 }
 
-// Return a deep copy of the checklist where every local image referenced in a
-// task's Markdown is replaced with an inline base64 data URI. This makes the
-// exported file (HTML or .uar) fully self-contained and portable to any machine.
-async function embedLocalImages(checklist: Checklist): Promise<Checklist> {
-  // Collect unique local image paths across all tasks.
-  const paths = new Set<string>();
-  for (const task of allTasks(checklist)) {
-    for (const m of task.details.matchAll(MARKDOWN_IMAGE_RE)) {
-      const src = m[1];
-      if (isLocalPath(src)) paths.add(src);
+/**
+ * Read every local picture referenced across some Markdown and return the
+ * data: URI to swap in for each reference. Pictures kept in the app's image
+ * folder are looked up there; anything else is read from where it sits.
+ */
+async function imageDataUris(sources: string[]): Promise<Map<string, string>> {
+  const refs = new Set<string>();
+  for (const text of sources) {
+    for (const src of markdownImageSources(text)) {
+      if (isLocalPath(src)) refs.add(src);
     }
   }
 
   const map = new Map<string, string>();
   await Promise.all(
-    [...paths].map(async (p) => {
-      const uri = await toDataUri(p);
-      if (uri) map.set(p, uri);
+    [...refs].map(async (ref) => {
+      const uri = await toDataUri(isAppImage(ref) ? await appImagePath(ref) : ref);
+      if (uri) map.set(ref, uri);
     }),
   );
+  return map;
+}
 
+function inlineImages(text: string, map: Map<string, string>): string {
+  if (map.size === 0) return text;
+  return text.replace(MARKDOWN_IMAGE_RE, (whole, angle, bare) => {
+    const src = angle ?? bare;
+    const uri = map.get(src);
+    return uri ? whole.replace(src, uri) : whole;
+  });
+}
+
+// Return a deep copy of the checklist where every local image referenced in
+// the description or a step's Markdown is replaced with an inline base64 data
+// URI, so the exported file works on a machine that has none of the originals.
+async function embedLocalImages(checklist: Checklist): Promise<Checklist> {
+  const map = await imageDataUris([
+    checklist.description,
+    ...allTasks(checklist).map((t) => t.details),
+  ]);
   if (map.size === 0) return checklist;
 
   return {
     ...checklist,
+    description: inlineImages(checklist.description, map),
     sections: checklist.sections.map((section) => ({
       ...section,
       tasks: section.tasks.map((task) => ({
         ...task,
-        details: task.details.replace(MARKDOWN_IMAGE_RE, (whole, src) => {
-          const uri = map.get(src);
-          return uri ? whole.replace(src, uri) : whole;
-        }),
+        details: inlineImages(task.details, map),
       })),
     })),
   };
@@ -177,26 +202,11 @@ export async function prepareDocPortable(
   doc: Doc,
   includeAttachments: boolean,
 ): Promise<Doc> {
-  const paths = new Set<string>();
-  for (const m of doc.body.matchAll(MARKDOWN_IMAGE_RE)) {
-    if (isLocalPath(m[1])) paths.add(m[1]);
-  }
-  const map = new Map<string, string>();
-  await Promise.all(
-    [...paths].map(async (p) => {
-      const uri = await toDataUri(p);
-      if (uri) map.set(p, uri);
-    }),
-  );
-
-  const body = doc.body.replace(MARKDOWN_IMAGE_RE, (whole, src) => {
-    const uri = map.get(src);
-    return uri ? whole.replace(src, uri) : whole;
-  });
+  const map = await imageDataUris([doc.body]);
 
   return {
     ...doc,
-    body,
+    body: inlineImages(doc.body, map),
     resources: includeAttachments
       ? await embedResourceList(doc.resources)
       : doc.resources,

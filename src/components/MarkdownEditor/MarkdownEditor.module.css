@@ -85,3 +85,9 @@
   font-style: italic;
   padding: 0.6rem 0.75rem;
 }
+
+/* While a picture is held over the writing area. */
+.dropReady {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}

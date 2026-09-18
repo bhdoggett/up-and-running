@@ -6,9 +6,9 @@
   background: var(--bg);
 }
 .inner {
-  max-width: 680px;
+  max-width: var(--content-max);
   margin: 0 auto;
-  padding: 1.6rem 1.4rem 3rem;
+  padding: 1.6rem var(--content-pad) 3rem;
 }
 
 .header {
@@ -80,7 +80,8 @@
   margin-top: 0.3rem;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
 }
 /* A dash per step. Each is its own segment, so the strip reads as a count as
    well as a proportion. */
@@ -168,6 +169,11 @@
 }
 .descEdit {
   margin-bottom: 1.3rem;
+}
+
+/* Sits between the description and the first section. */
+.resourceRow {
+  margin-bottom: 1.2rem;
 }
 .descActions {
   display: flex;

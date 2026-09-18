@@ -121,3 +121,42 @@
   border: 1px solid var(--border);
   padding: 0.35rem 0.6rem;
 }
+
+/* Stands in for a picture that wouldn't load, naming what it looked for. */
+.missing {
+  display: inline-block;
+  padding: 0.35rem 0.6rem;
+  border: 1px dashed var(--stop, #C4593F);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-family: "Barlow Condensed", Barlow, sans-serif;
+  font-size: 0.95rem;
+  word-break: break-all;
+}
+
+/* A picture whose width can be dragged. The handle only shows on hover, so
+   reading isn't cluttered by controls. */
+.resizable {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  max-width: 100%;
+}
+.handle {
+  position: absolute;
+  right: -0.35rem;
+  bottom: -0.35rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 1px solid var(--case, #17140F);
+  border-radius: 2px;
+  background: var(--amber, #F0A73C);
+  cursor: ew-resize;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  touch-action: none;
+}
+.resizable:hover .handle,
+.handle:active {
+  opacity: 1;
+}

@@ -23,6 +23,19 @@ Steps are numbered continuously across sections, so "step 7" means something.
 Ticking a step turns its number into a check; a section's checkbox ticks all of
 its steps at once.
 
+### Pictures in the writing
+
+Drop an image onto any Markdown editor, or use its 🖼 button. The picture is
+copied into the project's own image folder and written in as
+`![name](images/….png)` — a short reference that still works if the original is
+moved or the project is opened on another machine, and that the HTML export
+inlines so it works with no files at all. These are separate from **Files**,
+which lists things volunteers open rather than things you write with.
+
+To resize one, hover it and drag the corner; double-click the corner for its
+own size. The width is kept in the alt text (`![name|420](…)`), so it survives
+an export and stays readable as plain Markdown.
+
 ### Sharing it
 
 | You want to… | Use | What they get |
@@ -48,7 +61,10 @@ original wording and mirror the headings, lists, tables, and callouts.
 
 ## Installing
 
-Download a build from [Releases](../../releases):
+Download a build from
+[Releases](https://github.com/bhdoggett/up-and-running/releases/latest) —
+the full address, so the link still works when this file is read outside
+GitHub:
 
 - **macOS (Apple Silicon)** — `_aarch64.dmg`
 - **macOS (Intel)** — `_x64.dmg`

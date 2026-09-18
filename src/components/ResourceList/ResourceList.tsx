@@ -6,6 +6,7 @@ import { openLink, normalizeTarget } from "../../appLinks";
 import { hashBytes } from "../../attachments";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { useLibrary, useResourceLabel, isInternal } from "../../library";
+import { isCommandEnter } from "../../keys";
 import styles from "./ResourceList.module.css";
 
 interface Props {
@@ -142,10 +143,12 @@ export default function ResourceList({
         <div
           className={styles.rowBody}
           onKeyDown={(e) => {
-            if (editing && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              setEditingRow(null);
-            }
+            if (!editing || !isCommandEnter(e)) return;
+            e.preventDefault();
+            // Closes this row only — the step's own editor stays open, since
+            // the same key would otherwise close both at once.
+            e.stopPropagation();
+            setEditingRow(null);
           }}
         >
           {!editing && items.length > 0 && (

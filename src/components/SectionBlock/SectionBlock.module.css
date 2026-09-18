@@ -177,6 +177,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Prompt text, not a name: dimmed so it doesn't read as the section's title. */
+.name.unnamed {
+  color: var(--faint);
+  font-weight: 500;
+}
 .count {
   flex: none;
   font-family: "Barlow Condensed", Barlow, sans-serif;
